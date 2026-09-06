@@ -1,6 +1,7 @@
 import { ChannelTrack, Pattern, PlaylistClip, SynthParameters } from '../types/daw';
 import { DrumSynth } from './DrumSynth';
 import { SynthEngine } from './SynthEngine';
+import { InstrumentEngine } from './InstrumentEngine';
 
 export class WavExporter {
   public static async exportSongToWav(
@@ -21,6 +22,7 @@ export class WavExporter {
 
     const drumSynth = new DrumSynth(offlineCtx as unknown as AudioContext);
     const synthEngine = new SynthEngine(offlineCtx as unknown as AudioContext);
+    const instrumentEngine = new InstrumentEngine(offlineCtx as unknown as AudioContext);
 
     const masterGain = offlineCtx.createGain();
     masterGain.connect(offlineCtx.destination);
@@ -46,7 +48,13 @@ export class WavExporter {
                 if (trackSteps && trackSteps[stepInClip]?.active) {
                   const s = trackSteps[stepInClip];
                   if (track.type === 'drum' && track.soundId) {
-                    drumSynth.trigger(track.soundId, time, s.velocity * track.volume, masterGain);
+                    drumSynth.trigger(track.soundId, time, s.velocity * track.volume, masterGain, track.customAudioUrl, track.drumKitId || 'trap');
+                  } else if (track.type === 'instrument' && track.instrumentId) {
+                    const pitch = 60 + (s.pitchOffset || 0);
+                    instrumentEngine.noteOn(track.instrumentId, pitch, s.velocity * track.volume, time, masterGain);
+                    setTimeout(() => {
+                      instrumentEngine.noteOff(track.instrumentId!, pitch, time + secondsPer16th * 1.5);
+                    }, 0);
                   } else if (track.type === 'synth') {
                     const pitch = 48 + (s.pitchOffset || 0);
                     synthEngine.noteOn(pitch, s.velocity * track.volume, time, synthParams, masterGain);
@@ -66,6 +74,10 @@ export class WavExporter {
                       synthEngine.noteOn(note.midiNote, note.velocity * track.volume, time, synthParams, masterGain);
                       const dur = (note.durationSteps * 60) / bpm / 4;
                       synthEngine.noteOff(note.midiNote, time + dur, synthParams);
+                    } else if (track && !track.mute && track.type === 'instrument' && track.instrumentId) {
+                      instrumentEngine.noteOn(track.instrumentId, note.midiNote, note.velocity * track.volume, time, masterGain);
+                      const dur = (note.durationSteps * 60) / bpm / 4;
+                      instrumentEngine.noteOff(track.instrumentId, note.midiNote, time + dur);
                     }
                   }
                 }

@@ -20,6 +20,7 @@ import {
   NOTE_NAMES,
   SCALE_INTERVALS,
 } from '../audio/Presets';
+import { INSTRUMENT_CATALOG } from '../audio/InstrumentEngine';
 import { AudioEngine } from '../audio/AudioEngine';
 
 export const PianoRoll: React.FC = () => {
@@ -48,10 +49,17 @@ export const PianoRoll: React.FC = () => {
     engine.resumeContext();
     const mixerChan = engine.mixer.getChannel(activeTrack.mixerChannelIndex);
     const now = engine.ctx.currentTime;
-    engine.synthEngine.noteOn(midiNote, 0.9, now, state.synthParams, mixerChan.inputNode);
-    setTimeout(() => {
-      engine.synthEngine.noteOff(midiNote, now + 0.35, state.synthParams);
-    }, 350);
+    if (activeTrack.type === 'instrument' && activeTrack.instrumentId) {
+      engine.instrumentEngine.noteOn(activeTrack.instrumentId, midiNote, 0.9, now, mixerChan.inputNode);
+      setTimeout(() => {
+        engine.instrumentEngine.noteOff(activeTrack.instrumentId!, midiNote, now + 0.35);
+      }, 350);
+    } else {
+      engine.synthEngine.noteOn(midiNote, 0.9, now, state.synthParams, mixerChan.inputNode);
+      setTimeout(() => {
+        engine.synthEngine.noteOff(midiNote, now + 0.35, state.synthParams);
+      }, 350);
+    }
   };
 
   // Click on grid cell
@@ -160,6 +168,32 @@ export const PianoRoll: React.FC = () => {
               ))}
             </select>
           </div>
+
+          {/* Sound Selector (if instrument track) */}
+          {activeTrack.type === 'instrument' && (
+            <div className="flex items-center gap-1 bg-[#121316] px-2 py-1 rounded border border-[#353945]">
+              <span className="text-[10px] text-gray-400 uppercase font-mono">SOUND:</span>
+              <select
+                value={activeTrack.instrumentId || 'grand_piano'}
+                onChange={(e) => store.changeTrackInstrument(activeTrack.id, e.target.value)}
+                className="bg-transparent text-xs font-mono font-bold text-amber-400 focus:outline-none cursor-pointer max-w-[130px] truncate"
+              >
+                {INSTRUMENT_CATALOG.map((inst) => (
+                  <option key={inst.id} value={inst.id} className="bg-[#181a1f] text-white">
+                    {inst.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <button
+            onClick={() => store.setActiveView('browser')}
+            title="Browse all 40+ instruments and sounds"
+            className="px-2 py-1 rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-[11px] font-mono font-bold border border-amber-500/40 flex items-center gap-1"
+          >
+            <span>Sounds</span>
+          </button>
 
           {/* Tool Switcher: Draw, Erase, Chord Stamper */}
           <div className="flex items-center bg-[#121316] p-0.5 rounded border border-[#353945]">

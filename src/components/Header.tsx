@@ -17,6 +17,7 @@ import {
   Activity,
   Layers,
   Cpu,
+  Compass,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { NOTE_NAMES, SCALE_INTERVALS } from '../audio/Presets';
@@ -104,6 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'synth', label: 'EveSynth', icon: <Cpu size={15} />, color: 'text-pink-400' },
     { id: 'looper', label: 'LoopStation', icon: <Mic size={15} />, color: 'text-yellow-400' },
     { id: 'fxRack', label: 'FX Rack', icon: <Activity size={15} />, color: 'text-cyan-400' },
+    { id: 'browser', label: 'Sounds', icon: <Compass size={15} />, color: 'text-amber-400' },
   ];
 
   return (

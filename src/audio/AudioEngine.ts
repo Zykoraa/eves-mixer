@@ -2,6 +2,7 @@ import { Mixer } from './Mixer';
 import { DrumSynth } from './DrumSynth';
 import { SynthEngine } from './SynthEngine';
 import { LooperStation } from './LooperStation';
+import { InstrumentEngine } from './InstrumentEngine';
 import { ChannelTrack, Pattern, PlaylistClip, PlaybackMode, SynthParameters } from '../types/daw';
 
 export class AudioEngine {
@@ -11,6 +12,7 @@ export class AudioEngine {
   public mixer: Mixer;
   public drumSynth: DrumSynth;
   public synthEngine: SynthEngine;
+  public instrumentEngine: InstrumentEngine;
   public looperStation: LooperStation;
 
   // Transport & Clock State
@@ -51,6 +53,7 @@ export class AudioEngine {
     this.mixer = new Mixer(this.ctx, this.ctx.destination);
     this.drumSynth = new DrumSynth(this.ctx);
     this.synthEngine = new SynthEngine(this.ctx);
+    this.instrumentEngine = new InstrumentEngine(this.ctx);
     // Route looper to insert channel 6 by default (Channel 6 = Looper)
     const looperChannel = this.mixer.getChannel(6);
     this.looperStation = new LooperStation(this.ctx, looperChannel.inputNode);
@@ -236,15 +239,30 @@ export class AudioEngine {
             time,
             stepData.velocity * track.volume,
             mixerChan.inputNode,
-            track.customAudioUrl
+            track.customAudioUrl,
+            track.drumKitId || 'trap'
           );
+        } else if (track.type === 'instrument' && track.instrumentId) {
+          const basePitch = 60 + (stepData.pitchOffset || 0);
+          this.instrumentEngine.noteOn(
+            track.instrumentId,
+            basePitch,
+            stepData.velocity * track.volume,
+            time,
+            mixerChan.inputNode
+          );
+          const durSeconds = (60 / this.bpm / 4) * 1.5;
+          setTimeout(() => {
+            this.instrumentEngine.noteOff(track.instrumentId!, basePitch, time + durSeconds);
+          }, durSeconds * 1000);
         } else if (track.type === 'sampler' && track.customAudioUrl) {
           this.drumSynth.trigger(
             'kick',
             time,
             stepData.velocity * track.volume,
             mixerChan.inputNode,
-            track.customAudioUrl
+            track.customAudioUrl,
+            track.drumKitId || 'trap'
           );
         } else if (track.type === 'synth' && this.synthParams) {
           // Play base note for step sequencer (e.g. C3 = 48)
@@ -271,6 +289,12 @@ export class AudioEngine {
             const durSeconds = (note.durationSteps * 60) / this.bpm / 4;
             setTimeout(() => {
               this.synthEngine.noteOff(note.midiNote, time + durSeconds, this.synthParams!);
+            }, durSeconds * 1000);
+          } else if (track.type === 'instrument' && track.instrumentId) {
+            this.instrumentEngine.noteOn(note.trackId && track.instrumentId, note.midiNote, note.velocity * track.volume, time, mixerChan.inputNode);
+            const durSeconds = (note.durationSteps * 60) / this.bpm / 4;
+            setTimeout(() => {
+              this.instrumentEngine.noteOff(track.instrumentId!, note.midiNote, time + durSeconds);
             }, durSeconds * 1000);
           }
         }

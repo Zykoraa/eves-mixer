@@ -7,6 +7,7 @@ import { MixerRack } from './components/MixerRack';
 import { SynthEditor } from './components/SynthEditor';
 import { LoopStationView } from './components/LoopStationView';
 import { FxRack } from './components/FxRack';
+import { SoundBrowser } from './components/SoundBrowser';
 import { VisualizerPanel } from './components/VisualizerPanel';
 import { VirtualKeyboard } from './components/VirtualKeyboard';
 import { InspirationModal } from './components/InspirationModal';
@@ -38,6 +39,7 @@ export const App: React.FC = () => {
         {state.activeView === 'synth' && <SynthEditor />}
         {state.activeView === 'looper' && <LoopStationView />}
         {state.activeView === 'fxRack' && <FxRack />}
+        {state.activeView === 'browser' && <SoundBrowser />}
       </main>
 
       {/* Wave Candy Master FFT Visualizer */}

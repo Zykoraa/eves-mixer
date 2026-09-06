@@ -11,20 +11,35 @@
 
 ## ✨ Features Overview
 
-### 1. 🥁 Channel Rack (FL Studio Step Sequencer)
+### 1. 🥁 Channel Rack & Drum Kits
 - **Classic 16/32 Step Drum Machine**: Alternating 4-beat color groupings with moving playhead LED indicators.
-- **Dedicated Procedural Drum Synth**:
-  - **Punchy Kick**: Exponential sub-drop with click transient.
-  - **808 Sub Boom**: Sustained low-frequency bass with pitch envelope.
-  - **Snare**: Dual tone body + shaped white noise snare wire snap.
-  - **Hand Clap**: 3 staggered micro-burst impulses + room decay.
-  - **Closed & Open Hi-Hats**: Metallic sizzle with choke-group behavior.
-  - **Tuned Tom, Rimshot, Shimmering Crash & Glitch FX**.
+- **6 Curated Genre Drum Kits**:
+  - **Trap / Hip-Hop**: Hard punchy kick, heavy distorted 808 sub, snappy snare, crisp clap, sizzle hats.
+  - **Synthwave 80s**: Deep electro kick, gated reverb snare, Simmons tom, analog claps.
+  - **Lo-Fi Chill**: Warm vinyl kick, brushed rimshot, taped snare, organic hats.
+  - **House / EDM**: Round 909-style kick, punchy 909 snare, open pedal hat, disco clap.
+  - **Acoustic Studio**: Natural resonant kick, tight beechwood snare, acoustic tom, bright crash.
+  - **Cyber Glitch**: Bitcrushed click kick, digital glitch zap snare, metallic transient hats.
 - **Custom Audio Sample Drag-and-Drop**: Load any `.wav`, `.mp3`, or audio file into any channel pad.
 - **Per-Channel Controls**: Volume & Stereo Panning knobs, Mute & Solo LEDs, Mixer channel routing.
 - **1-Click Beat Templates**: Trap Rolling Hats, 4-on-the-Floor House, Swung Lo-Fi Boom Bap, UK Drill.
 
-### 2. 🎹 Piano Roll (Chromatic Note Editor)
+### 2. 🎻 Complete 40+ Instrument Sound Library & Sound Browser
+- **40+ Pure Web Audio Physically Modeled Instruments** (zero loading lag, offline ready):
+  - **Keys & Organs**: Concert Grand Piano, Vintage Rhodes MK1, Wurlitzer 200A, Clavinet D6, Hammond B3 Tonewheel, Church Pipe Organ, Baroque Harpsichord, FM Digital DX Piano.
+  - **Bass**: Trap 808 Sub, Acoustic Upright Bass, Slap Funk Bass, Reese Bass, Acid 303 Acidline, Sub Sine Bass.
+  - **Strings & Orchestral**: Concert Violin/Cello Strings, Pizzicato Strings, Silver Flute, Andean Pan Flute, Orchestral Brass Ensemble.
+  - **Guitars**: Acoustic Folk Guitar, Clean Electric Strat, Overdriven Rock Lead.
+  - **Mallets & Ethnic**: African Kalimba, Wooden Marimba, Jazz Vibraphone, Caribbean Steel Pan, Japanese Koto.
+  - **Synths & Leads**: Trance Supersaw, 8-Bit Chiptune Square, Modern Hyperpop Pluck, Analog Pulse Bass.
+  - **Pads & Vocals**: Ethereal Dream Pad, Vowel Choir Aahs, Ambient Texture, Cyber Space Drone.
+  - **SFX**: Laser Zap, Downlifter Sweep, Uplifter Rise, Coin Pickup.
+- **Interactive Sound Browser (Shortcut `8`)**:
+  - Search by name, filter by 8 categories.
+  - Instant live auditioning previews.
+  - 1-click **Add Track to Rack** or **Swap Selected Instrument**.
+
+### 3. 🎹 Piano Roll (Chromatic Note Editor)
 - **Melodic Note Matrix**: Multi-octave chromatic grid (C2 to B5) with interactive audition keys.
 - **Scale Highlighting & "Never Play a Wrong Note" Mode**:
   - Highlights notes belonging to chosen key and scale (Major, Minor, Dorian, Pentatonic, Blues, Harmonic Minor, Japanese Hirajoshi).
@@ -33,18 +48,18 @@
 - **Velocity Lane**: Per-note volume stalks with interactive velocity sliders.
 - **Melody Randomizer**: Generates riffs mathematically locked to your key.
 
-### 3. 🎼 Playlist Arrangement (Song Timeline)
+### 4. 🎼 Playlist Arrangement (Song Timeline)
 - **Song Mode vs. Pattern Mode**: Switch between looping a pattern (`PAT`) or playing the entire song timeline (`SONG`).
 - **Multitrack Timeline**: 8+ arrangement rows for arranging patterns and microphone audio clips.
 - **Bar Scrubber & Loop Markers**: Continuous playhead cursor tracking song position.
 
-### 4. 🎚️ 8-Channel Mixer Console
+### 5. 🎚️ 8-Channel Mixer Console
 - **Master Bus + 8 Dedicated Insert Channels** (Drums, Hats, 808 Bass, Lead Synth, Sampler, Mic Looper, Inserts 7 & 8).
 - **Studio Peak Meters**: Real-time dB level ladder with green, yellow, and red clipping alerts.
 - **Hardware-Style Faders & Panning**: Smooth volume sliders with logarithmic dB scales.
 - **Master Limiter**: Soft-knee lookahead limiter on the master output to prevent harsh digital distortion.
 
-### 5. 🎙️ Eve LoopStation (Microphone Recording & 4-Deck Looper)
+### 6. 🎙️ Eve LoopStation (Microphone Recording & 4-Deck Looper)
 - **Live Microphone Input**: Real-time voice oscilloscope and input VU meter.
 - **Direct Monitoring**: Toggle live headphone monitoring with built-in feedback protection.
 - **4 Synchronized Quantized Looper Decks**:
@@ -56,14 +71,14 @@
   - **Send to Playlist**: Drop your vocal or beatbox loop straight into the song arrangement timeline as an audio clip!
   - **Download WAV**: Export individual loop recordings.
 
-### 6. ⚡ Studio DSP Effects Rack
+### 7. ⚡ Studio DSP Effects Rack
 - **Parametric 5-Band Visual EQ**: Interactive frequency response curve with real-time spectrum analysis.
 - **Studio Reverb**: Rich algorithmic decay, room sizing, damping, and wet/dry balance.
 - **Ping-Pong Stereo Delay**: Tempo-synced delay times with cross-feedback and filtering.
 - **Analog Saturator & Overdrive**: Tube warmth, soft clipping, hard clipping, and fuzz modes.
 - **Studio Compressor**: Threshold, ratio, attack, release, and makeup gain.
 
-### 7. 🤖 EveSynth (Dual-Oscillator Analog Synthesizer)
+### 8. 🤖 EveSynth (Dual-Oscillator Analog Synthesizer)
 - **Dual Multi-Waveform Oscillators**: Sine, Triangle, Sawtooth, Square, and White Noise.
 - **Sub-Oscillator & Detune**: Fat, detuned unison spreads and deep sub-octave reinforcement.
 - **24dB Resonant Biquad Filter**: Lowpass, Highpass, and Bandpass modes with envelope modulation.
@@ -72,16 +87,16 @@
 - **Polyphony**: Monophonic legato with portamento glide vs. 8-voice polyphony for lush chords.
 - **Curated Presets**: Cyberpunk Saw Lead, Neo 808 Sub, Sunset Lo-Fi Keys, Ethereal Dream Pad, Hyperpop Pluck, Acid 303 Bass.
 
-### 8. 💡 Inspiration Engine (AI / Algorithmic Music Assistant)
+### 9. 💡 Inspiration Engine (AI / Algorithmic Music Assistant)
 - **1-Click Chord Progression Generator**: Neo-Soul Romance, Lo-Fi Chill Hop, Dark Trap Melancholy, Synthwave Night Ride, Hyperpop Energy.
 - **Scale-Locked Lead Generator**: Instantly fills your piano roll with musical riffs that always fit your harmony.
 
-### 9. 🎛️ Wave Candy & Virtual Keyboard
+### 10. 🎛️ Wave Candy & Virtual Keyboard
 - **Wave Candy Master Visualizer**: Combined real-time FFT spectrum analyzer and oscilloscope.
 - **Computer Keyboard Piano**: Play instruments live using QWERTY keys (`A-L` and `W-P`).
 - **Web MIDI Controller Integration**: Plug in any USB MIDI keyboard or pad controller — detected automatically with velocity sensitivity!
 
-### 10. 💾 Offline Studio WAV Exporter
+### 11. 💾 Offline Studio WAV Exporter
 - **OfflineAudioContext Rendering**: Renders full song arrangements in seconds without audio dropouts or glitches.
 - **Project Save & Load**: Save `.evesmixer` project files and load them anytime.
 
@@ -111,6 +126,7 @@
 | `5` | Open EveSynth Editor |
 | `6` | Open Eve LoopStation |
 | `7` | Open FX Rack |
+| `8` | Open Sound Browser |
 | `A, S, D, F, G, H, J, K, L` | White Piano Keys (C4 to E5) |
 | `W, E, T, Y, U, O, P` | Black Piano Keys (C#4 to D#5) |
 

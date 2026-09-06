@@ -39,7 +39,11 @@ export const VirtualKeyboard: React.FC = () => {
     setActiveNotes((prev) => new Set(prev).add(shiftedMidi));
     const mixerChan = engine.mixer.getChannel(activeTrack.mixerChannelIndex);
     const now = engine.ctx.currentTime;
-    engine.synthEngine.noteOn(shiftedMidi, 0.9, now, state.synthParams, mixerChan.inputNode);
+    if (activeTrack.type === 'instrument' && activeTrack.instrumentId) {
+      engine.instrumentEngine.noteOn(activeTrack.instrumentId, shiftedMidi, 0.9, now, mixerChan.inputNode);
+    } else {
+      engine.synthEngine.noteOn(shiftedMidi, 0.9, now, state.synthParams, mixerChan.inputNode);
+    }
   };
 
   const triggerNoteOff = (midi: number) => {
@@ -50,7 +54,11 @@ export const VirtualKeyboard: React.FC = () => {
       return copy;
     });
     const now = engine.ctx.currentTime;
-    engine.synthEngine.noteOff(shiftedMidi, now, state.synthParams);
+    if (activeTrack.type === 'instrument' && activeTrack.instrumentId) {
+      engine.instrumentEngine.noteOff(activeTrack.instrumentId, shiftedMidi, now);
+    } else {
+      engine.synthEngine.noteOff(shiftedMidi, now, state.synthParams);
+    }
   };
 
   // Keyboard and MIDI Listeners
@@ -85,6 +93,8 @@ export const VirtualKeyboard: React.FC = () => {
         store.setActiveView('looper');
       } else if (key === '7') {
         store.setActiveView('fxRack');
+      } else if (key === '8') {
+        store.setActiveView('browser');
       }
     };
 
@@ -105,7 +115,11 @@ export const VirtualKeyboard: React.FC = () => {
       engine.resumeContext();
       setActiveNotes((prev) => new Set(prev).add(note));
       const mixerChan = engine.mixer.getChannel(activeTrack.mixerChannelIndex);
-      engine.synthEngine.noteOn(note, vel, engine.ctx.currentTime, state.synthParams, mixerChan.inputNode);
+      if (activeTrack.type === 'instrument' && activeTrack.instrumentId) {
+        engine.instrumentEngine.noteOn(activeTrack.instrumentId, note, vel, engine.ctx.currentTime, mixerChan.inputNode);
+      } else {
+        engine.synthEngine.noteOn(note, vel, engine.ctx.currentTime, state.synthParams, mixerChan.inputNode);
+      }
     });
     const unsubOff = midi.onNoteOff((note) => {
       setActiveNotes((prev) => {
@@ -113,7 +127,11 @@ export const VirtualKeyboard: React.FC = () => {
         copy.delete(note);
         return copy;
       });
-      engine.synthEngine.noteOff(note, engine.ctx.currentTime, state.synthParams);
+      if (activeTrack.type === 'instrument' && activeTrack.instrumentId) {
+        engine.instrumentEngine.noteOff(activeTrack.instrumentId, note, engine.ctx.currentTime);
+      } else {
+        engine.synthEngine.noteOff(note, engine.ctx.currentTime, state.synthParams);
+      }
     });
 
     return () => {

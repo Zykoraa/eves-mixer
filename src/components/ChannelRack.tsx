@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Sparkles,
   Play,
+  Compass,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { ChannelTrack } from '../types/daw';
@@ -47,14 +48,29 @@ export const ChannelRack: React.FC = () => {
   };
 
   // Add new track
-  const handleAddNewTrack = (type: 'drum' | 'synth' | 'sampler') => {
+  const handleAddNewTrack = (type: 'drum' | 'synth' | 'instrument' | 'sampler') => {
     const id = `track-${Date.now()}`;
     const newTrack: ChannelTrack = {
       id,
-      name: type === 'synth' ? 'Synth Lead 2' : type === 'sampler' ? 'Sample Pad' : 'Percussion',
+      name:
+        type === 'synth'
+          ? 'Synth Lead 2'
+          : type === 'instrument'
+          ? 'Concert Grand Piano'
+          : type === 'sampler'
+          ? 'Sample Pad'
+          : 'Percussion',
       type,
+      instrumentId: type === 'instrument' ? 'grand_piano' : undefined,
       soundId: type === 'drum' ? 'rim' : undefined,
-      color: type === 'synth' ? '#ec4899' : type === 'sampler' ? '#22c55e' : '#f59e0b',
+      color:
+        type === 'synth'
+          ? '#ec4899'
+          : type === 'instrument'
+          ? '#38bdf8'
+          : type === 'sampler'
+          ? '#22c55e'
+          : '#f59e0b',
       volume: 0.85,
       pan: 0,
       mute: false,
@@ -256,7 +272,7 @@ export const ChannelRack: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-[#181a20] text-gray-400">
-                  {track.type === 'synth' ? 'SYNTH' : track.type === 'sampler' ? 'SMP' : 'DRUM'}
+                  {track.type === 'synth' ? 'SYNTH' : track.type === 'instrument' ? 'INST' : track.type === 'sampler' ? 'SMP' : 'DRUM'}
                 </span>
               </button>
 
@@ -348,7 +364,13 @@ export const ChannelRack: React.FC = () => {
       {/* Bottom Bar: Add Instruments / Drums / Sampler */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#1b1d25] border-t border-[#2a2d38]">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400 font-semibold">+ Add Track:</span>
+          <button
+            onClick={() => handleAddNewTrack('instrument')}
+            className="px-2 py-1 text-xs font-semibold rounded bg-[#282b37] hover:bg-[#35394a] text-sky-400 hover:text-white border border-[#383d4f] flex items-center gap-1 transition-all"
+          >
+            <Plus size={13} />
+            Instrument
+          </button>
           <button
             onClick={() => handleAddNewTrack('drum')}
             className="px-2 py-1 text-xs font-semibold rounded bg-[#282b37] hover:bg-[#35394a] text-orange-400 hover:text-white border border-[#383d4f] flex items-center gap-1 transition-all"
@@ -370,10 +392,17 @@ export const ChannelRack: React.FC = () => {
             <Plus size={13} />
             Audio Sampler
           </button>
+          <button
+            onClick={() => store.setActiveView('browser')}
+            className="px-2.5 py-1 text-xs font-bold rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white border border-amber-500/40 flex items-center gap-1.5 transition-all shadow-xs"
+          >
+            <Compass size={13} />
+            <span>Sound Library (40+ Sounds)</span>
+          </button>
         </div>
 
         <div className="text-[11px] text-gray-500 font-mono">
-          Tip: Double click any channel button to open in Piano Roll
+          Tip: Click Sound Library to browse &amp; audition 40+ presets
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { DrumSoundId } from '../types/daw';
+import { DrumSoundId, DrumKitId } from '../types/daw';
 
 export class DrumSynth {
   private ctx: AudioContext;
@@ -37,7 +37,8 @@ export class DrumSynth {
     time: number,
     velocity: number = 1.0,
     destination: AudioNode,
-    customAudioUrl?: string
+    customAudioUrl?: string,
+    kitId: DrumKitId = 'trap'
   ) {
     if (customAudioUrl && this.customBuffers.has(customAudioUrl)) {
       this.playCustomSample(customAudioUrl, time, velocity, destination);
@@ -46,34 +47,34 @@ export class DrumSynth {
 
     switch (soundId) {
       case 'kick':
-        this.playKick(time, velocity, destination);
+        this.playKick(time, velocity, destination, kitId);
         break;
       case '808':
-        this.play808(time, velocity, destination);
+        this.play808(time, velocity, destination, kitId);
         break;
       case 'snare':
-        this.playSnare(time, velocity, destination);
+        this.playSnare(time, velocity, destination, kitId);
         break;
       case 'clap':
-        this.playClap(time, velocity, destination);
+        this.playClap(time, velocity, destination, kitId);
         break;
       case 'hihat_closed':
-        this.playClosedHiHat(time, velocity, destination);
+        this.playClosedHiHat(time, velocity, destination, kitId);
         break;
       case 'hihat_open':
-        this.playOpenHiHat(time, velocity, destination);
+        this.playOpenHiHat(time, velocity, destination, kitId);
         break;
       case 'tom':
-        this.playTom(time, velocity, destination);
+        this.playTom(time, velocity, destination, kitId);
         break;
       case 'rim':
-        this.playRim(time, velocity, destination);
+        this.playRim(time, velocity, destination, kitId);
         break;
       case 'crash':
-        this.playCrash(time, velocity, destination);
+        this.playCrash(time, velocity, destination, kitId);
         break;
       case 'fx':
-        this.playFx(time, velocity, destination);
+        this.playFx(time, velocity, destination, kitId);
         break;
     }
   }
@@ -90,22 +91,49 @@ export class DrumSynth {
     source.start(time);
   }
 
-  // Punchy Electronic Kick
-  private playKick(time: number, velocity: number, destination: AudioNode) {
+  // --- KICK DRUM ---
+  private playKick(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'sine';
-    // Pitch envelope: fast drop from 160Hz to 40Hz
-    osc.frequency.setValueAtTime(160, time);
-    osc.frequency.exponentialRampToValueAtTime(45, time + 0.08);
-    osc.frequency.exponentialRampToValueAtTime(32, time + 0.35);
+    osc.type = kitId === 'glitch' ? 'square' : 'sine';
+
+    let startFreq = 160;
+    let midFreq = 48;
+    let endFreq = 34;
+    let decayTime = 0.38;
+
+    if (kitId === 'synthwave') {
+      startFreq = 180;
+      midFreq = 58;
+      endFreq = 42;
+      decayTime = 0.28;
+    } else if (kitId === 'lofi') {
+      startFreq = 120;
+      midFreq = 42;
+      endFreq = 30;
+      decayTime = 0.45;
+    } else if (kitId === 'house') {
+      startFreq = 150;
+      midFreq = 52;
+      endFreq = 40;
+      decayTime = 0.32;
+    } else if (kitId === 'acoustic') {
+      startFreq = 140;
+      midFreq = 54;
+      endFreq = 38;
+      decayTime = 0.42;
+    }
+
+    osc.frequency.setValueAtTime(startFreq, time);
+    osc.frequency.exponentialRampToValueAtTime(midFreq, time + 0.07);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, time + decayTime);
 
     // Click transient
     const clickOsc = this.ctx.createOscillator();
     const clickGain = this.ctx.createGain();
     clickOsc.type = 'triangle';
-    clickOsc.frequency.setValueAtTime(400, time);
+    clickOsc.frequency.setValueAtTime(kitId === 'lofi' ? 250 : 500, time);
     clickGain.gain.setValueAtTime(0.4 * velocity, time);
     clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
     clickOsc.connect(clickGain);
@@ -115,50 +143,53 @@ export class DrumSynth {
 
     // Amplitude envelope
     gain.gain.setValueAtTime(1.1 * velocity, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + decayTime);
 
     osc.connect(gain);
     gain.connect(destination);
 
     osc.start(time);
-    osc.stop(time + 0.45);
+    osc.stop(time + decayTime + 0.05);
   }
 
-  // Deep Sustained 808 Sub-bass
-  private play808(time: number, velocity: number, destination: AudioNode) {
+  // --- 808 BASS ---
+  private play808(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(65, time);
-    osc.frequency.exponentialRampToValueAtTime(42, time + 0.06);
+    const startFreq = kitId === 'glitch' ? 85 : 68;
+    const endFreq = kitId === 'synthwave' ? 48 : 38;
 
-    gain.gain.setValueAtTime(1.0 * velocity, time);
-    gain.gain.setValueAtTime(0.85 * velocity, time + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.9);
+    osc.frequency.setValueAtTime(startFreq, time);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, time + 0.06);
+
+    gain.gain.setValueAtTime(1.05 * velocity, time);
+    gain.gain.setValueAtTime(0.9 * velocity, time + 0.12);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
 
     osc.connect(gain);
     gain.connect(destination);
 
     osc.start(time);
-    osc.stop(time + 1.0);
+    osc.stop(time + 1.3);
   }
 
-  // Snappy Snare with body and rattle
-  private playSnare(time: number, velocity: number, destination: AudioNode) {
+  // --- SNARE DRUM ---
+  private playSnare(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     // Body tone
     const osc = this.ctx.createOscillator();
     const oscGain = this.ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(220, time);
+    osc.frequency.setValueAtTime(kitId === 'synthwave' ? 260 : 210, time);
     osc.frequency.exponentialRampToValueAtTime(140, time + 0.08);
 
     oscGain.gain.setValueAtTime(0.7 * velocity, time);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
     osc.connect(oscGain);
     oscGain.connect(destination);
     osc.start(time);
-    osc.stop(time + 0.2);
+    osc.stop(time + 0.22);
 
     // Noise wire rattle
     if (this.noiseBuffer) {
@@ -166,42 +197,43 @@ export class DrumSynth {
       noise.buffer = this.noiseBuffer;
 
       const filter = this.ctx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.setValueAtTime(1000, time);
+      filter.type = kitId === 'synthwave' ? 'lowpass' : 'highpass';
+      filter.frequency.setValueAtTime(kitId === 'synthwave' ? 5000 : 1200, time);
 
       const noiseGain = this.ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.9 * velocity, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.24);
+      const decay = kitId === 'synthwave' ? 0.38 : 0.22; // 80s gated snare sustain
+      noiseGain.gain.setValueAtTime(0.95 * velocity, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + decay);
 
       noise.connect(filter);
       filter.connect(noiseGain);
       noiseGain.connect(destination);
 
       noise.start(time);
-      noise.stop(time + 0.25);
+      noise.stop(time + decay + 0.05);
     }
   }
 
-  // Multi-burst Hand Clap
-  private playClap(time: number, velocity: number, destination: AudioNode) {
+  // --- HAND CLAP ---
+  private playClap(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     if (!this.noiseBuffer) return;
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(1200, time);
-    filter.Q.setValueAtTime(1.5, time);
+    filter.frequency.setValueAtTime(kitId === 'lofi' ? 950 : 1250, time);
+    filter.Q.setValueAtTime(1.8, time);
 
     const gain = this.ctx.createGain();
     filter.connect(gain);
     gain.connect(destination);
 
-    // 3 rapid mini-bursts (simulating multiple hands clapping)
+    // 3 rapid mini-bursts
     const bursts = [0, 0.012, 0.024];
     bursts.forEach((offset) => {
       const noise = this.ctx.createBufferSource();
       noise.buffer = this.noiseBuffer;
       const burstGain = this.ctx.createGain();
-      burstGain.gain.setValueAtTime(0.6 * velocity, time + offset);
+      burstGain.gain.setValueAtTime(0.65 * velocity, time + offset);
       burstGain.gain.exponentialRampToValueAtTime(0.001, time + offset + 0.015);
       noise.connect(burstGain);
       burstGain.connect(filter);
@@ -213,7 +245,7 @@ export class DrumSynth {
     const mainNoise = this.ctx.createBufferSource();
     mainNoise.buffer = this.noiseBuffer;
     const mainGain = this.ctx.createGain();
-    mainGain.gain.setValueAtTime(0.85 * velocity, time + 0.03);
+    mainGain.gain.setValueAtTime(0.9 * velocity, time + 0.03);
     mainGain.gain.exponentialRampToValueAtTime(0.001, time + 0.32);
     mainNoise.connect(mainGain);
     mainGain.connect(filter);
@@ -221,41 +253,42 @@ export class DrumSynth {
     mainNoise.stop(time + 0.35);
   }
 
-  // Closed Hi-Hat (Crisp and tight)
-  private playClosedHiHat(time: number, velocity: number, destination: AudioNode) {
+  // --- CLOSED HI-HAT ---
+  private playClosedHiHat(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     if (!this.noiseBuffer) return;
     const noise = this.ctx.createBufferSource();
     noise.buffer = this.noiseBuffer;
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'highpass';
-    filter.frequency.setValueAtTime(7500, time);
+    filter.frequency.setValueAtTime(kitId === 'lofi' ? 5500 : 7800, time);
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.7 * velocity, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.055);
+    gain.gain.setValueAtTime(0.75 * velocity, time);
+    const decay = kitId === 'trap' ? 0.045 : 0.06;
+    gain.gain.exponentialRampToValueAtTime(0.001, time + decay);
 
     noise.connect(filter);
     filter.connect(gain);
     gain.connect(destination);
 
     noise.start(time);
-    noise.stop(time + 0.06);
+    noise.stop(time + decay + 0.01);
   }
 
-  // Open Hi-Hat (Sustained metallic sizzle)
-  private playOpenHiHat(time: number, velocity: number, destination: AudioNode) {
+  // --- OPEN HI-HAT ---
+  private playOpenHiHat(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     if (!this.noiseBuffer) return;
     const noise = this.ctx.createBufferSource();
     noise.buffer = this.noiseBuffer;
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'highpass';
-    filter.frequency.setValueAtTime(6000, time);
+    filter.frequency.setValueAtTime(kitId === 'lofi' ? 4800 : 6500, time);
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.75 * velocity, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+    gain.gain.setValueAtTime(0.8 * velocity, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.42);
 
     noise.connect(filter);
     filter.connect(gain);
@@ -265,14 +298,17 @@ export class DrumSynth {
     noise.stop(time + 0.45);
   }
 
-  // Tuned Tom
-  private playTom(time: number, velocity: number, destination: AudioNode) {
+  // --- TOM ---
+  private playTom(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(140, time);
-    osc.frequency.exponentialRampToValueAtTime(75, time + 0.25);
+    const startFreq = kitId === 'synthwave' ? 220 : 160;
+    const endFreq = kitId === 'synthwave' ? 90 : 70;
+
+    osc.frequency.setValueAtTime(startFreq, time);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, time + 0.24);
 
     gain.gain.setValueAtTime(0.9 * velocity, time);
     gain.gain.exponentialRampToValueAtTime(0.001, time + 0.35);
@@ -284,16 +320,16 @@ export class DrumSynth {
     osc.stop(time + 0.4);
   }
 
-  // Resonant Rimshot
-  private playRim(time: number, velocity: number, destination: AudioNode) {
+  // --- RIMSHOT ---
+  private playRim(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(600, time);
-    osc.frequency.exponentialRampToValueAtTime(350, time + 0.04);
+    osc.frequency.setValueAtTime(kitId === 'glitch' ? 950 : 650, time);
+    osc.frequency.exponentialRampToValueAtTime(360, time + 0.04);
 
-    gain.gain.setValueAtTime(0.8 * velocity, time);
+    gain.gain.setValueAtTime(0.85 * velocity, time);
     gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
 
     osc.connect(gain);
@@ -303,8 +339,8 @@ export class DrumSynth {
     osc.stop(time + 0.07);
   }
 
-  // Shimmering Crash Cymbal
-  private playCrash(time: number, velocity: number, destination: AudioNode) {
+  // --- CRASH CYMBAL ---
+  private playCrash(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     if (!this.noiseBuffer) return;
     const noise = this.ctx.createBufferSource();
     noise.buffer = this.noiseBuffer;
@@ -314,33 +350,33 @@ export class DrumSynth {
     filter.frequency.setValueAtTime(4500, time);
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.8 * velocity, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 1.4);
+    gain.gain.setValueAtTime(0.85 * velocity, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 1.5);
 
     noise.connect(filter);
     filter.connect(gain);
     gain.connect(destination);
 
     noise.start(time);
-    noise.stop(time + 1.5);
+    noise.stop(time + 1.6);
   }
 
-  // Glitch Transition FX
-  private playFx(time: number, velocity: number, destination: AudioNode) {
+  // --- PERCUSSION FX ---
+  private playFx(time: number, velocity: number, destination: AudioNode, kitId: DrumKitId) {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(800, time);
-    osc.frequency.exponentialRampToValueAtTime(100, time + 0.3);
+    osc.frequency.setValueAtTime(kitId === 'glitch' ? 1200 : 850, time);
+    osc.frequency.exponentialRampToValueAtTime(100, time + 0.28);
 
-    gain.gain.setValueAtTime(0.6 * velocity, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.35);
+    gain.gain.setValueAtTime(0.65 * velocity, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.32);
 
     osc.connect(gain);
     gain.connect(destination);
 
     osc.start(time);
-    osc.stop(time + 0.4);
+    osc.stop(time + 0.35);
   }
 }

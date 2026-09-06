@@ -1,4 +1,26 @@
-export type TrackType = 'drum' | 'synth' | 'sampler';
+export type TrackType = 'drum' | 'synth' | 'instrument' | 'sampler';
+
+export type DrumKitId = 'trap' | 'synthwave' | 'lofi' | 'house' | 'acoustic' | 'glitch';
+
+export type InstrumentCategory =
+  | 'keys'
+  | 'bass'
+  | 'strings'
+  | 'guitars'
+  | 'synths'
+  | 'pads'
+  | 'drums'
+  | 'fx';
+
+export interface InstrumentDefinition {
+  id: string;
+  name: string;
+  category: InstrumentCategory;
+  description: string;
+  defaultOctave: number;
+  color: string;
+  tags: string[];
+}
 
 export type DrumSoundId =
   | 'kick'
@@ -32,6 +54,8 @@ export interface ChannelTrack {
   name: string;
   type: TrackType;
   soundId?: DrumSoundId;
+  drumKitId?: DrumKitId;
+  instrumentId?: string;
   synthPresetId?: string;
   color: string;
   volume: number; // 0.0 to 1.0
@@ -196,7 +220,7 @@ export interface SynthParameters {
 }
 
 export type PlaybackMode = 'pattern' | 'song';
-export type ViewTab = 'channelRack' | 'pianoRoll' | 'playlist' | 'mixer' | 'synth' | 'looper' | 'fxRack';
+export type ViewTab = 'channelRack' | 'pianoRoll' | 'playlist' | 'mixer' | 'synth' | 'looper' | 'fxRack' | 'browser';
 
 export type MusicalScale = 
   | 'chromatic'

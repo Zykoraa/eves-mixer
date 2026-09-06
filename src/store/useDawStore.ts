@@ -13,6 +13,7 @@ import {
   MusicalScale,
   StepData,
   PianoNote,
+  DrumKitId,
 } from '../types/daw';
 import {
   DEFAULT_SYNTH_PARAMS,
@@ -23,6 +24,7 @@ import {
   INSPIRATION_PROGRESSIONS,
 } from '../audio/Presets';
 import { AudioEngine } from '../audio/AudioEngine';
+import { INSTRUMENT_CATALOG } from '../audio/InstrumentEngine';
 
 // Default initial tracks
 const createInitialTracks = (): ChannelTrack[] => [
@@ -206,6 +208,36 @@ const createInitialTracks = (): ChannelTrack[] => [
     color: '#22c55e',
     volume: 0.8,
     pan: 0,
+    mute: false,
+    solo: false,
+    mixerChannelIndex: 5,
+    steps: {
+      'pat-1': Array.from({ length: 16 }, () => ({ active: false, velocity: 0.8 })),
+    },
+  },
+  {
+    id: 't-piano',
+    name: 'Concert Grand Piano',
+    type: 'instrument',
+    instrumentId: 'grand_piano',
+    color: '#38bdf8',
+    volume: 0.9,
+    pan: 0,
+    mute: false,
+    solo: false,
+    mixerChannelIndex: 5,
+    steps: {
+      'pat-1': Array.from({ length: 16 }, () => ({ active: false, velocity: 0.8 })),
+    },
+  },
+  {
+    id: 't-rhodes',
+    name: 'Vintage Rhodes EP',
+    type: 'instrument',
+    instrumentId: 'rhodes_ep',
+    color: '#0284c7',
+    volume: 0.85,
+    pan: 0.1,
     mute: false,
     solo: false,
     mixerChannelIndex: 5,
@@ -544,15 +576,113 @@ class Store {
     const mixerChan = this.audioEngine.mixer.getChannel(track.mixerChannelIndex);
     const now = this.audioEngine.ctx.currentTime;
     if (track.type === 'drum' && track.soundId) {
-      this.audioEngine.drumSynth.trigger(track.soundId, now, velocity * track.volume, mixerChan.inputNode, track.customAudioUrl);
+      this.audioEngine.drumSynth.trigger(
+        track.soundId,
+        now,
+        velocity * track.volume,
+        mixerChan.inputNode,
+        track.customAudioUrl,
+        track.drumKitId || 'trap'
+      );
     } else if (track.type === 'sampler') {
-      this.audioEngine.drumSynth.trigger('kick', now, velocity * track.volume, mixerChan.inputNode, track.customAudioUrl);
+      this.audioEngine.drumSynth.trigger(
+        'kick',
+        now,
+        velocity * track.volume,
+        mixerChan.inputNode,
+        track.customAudioUrl,
+        track.drumKitId || 'trap'
+      );
+    } else if (track.type === 'instrument' && track.instrumentId) {
+      const pitch = 60 + (track.steps[this.state.selectedPatternId]?.[0]?.pitchOffset || 0);
+      this.audioEngine.instrumentEngine.noteOn(
+        track.instrumentId,
+        pitch,
+        velocity * track.volume,
+        now,
+        mixerChan.inputNode
+      );
+      setTimeout(() => {
+        this.audioEngine.instrumentEngine.noteOff(track.instrumentId!, pitch, now + 0.45);
+      }, 450);
     } else if (track.type === 'synth') {
       this.audioEngine.synthEngine.noteOn(60, velocity * track.volume, now, this.state.synthParams, mixerChan.inputNode);
       setTimeout(() => {
         this.audioEngine.synthEngine.noteOff(60, now + 0.3, this.state.synthParams);
       }, 300);
     }
+  }
+
+  public auditionInstrument(instrumentId: string) {
+    this.audioEngine.resumeContext();
+    const mixerChan = this.audioEngine.mixer.getChannel(4);
+    const now = this.audioEngine.ctx.currentTime;
+    // Play an audition 3-note melodic arpeggio (C4, E4, G4)
+    this.audioEngine.instrumentEngine.noteOn(instrumentId, 60, 0.85, now, mixerChan.inputNode);
+    this.audioEngine.instrumentEngine.noteOn(instrumentId, 64, 0.8, now + 0.12, mixerChan.inputNode);
+    this.audioEngine.instrumentEngine.noteOn(instrumentId, 67, 0.9, now + 0.24, mixerChan.inputNode);
+
+    setTimeout(() => {
+      this.audioEngine.instrumentEngine.noteOff(instrumentId, 60, now + 0.6);
+      this.audioEngine.instrumentEngine.noteOff(instrumentId, 64, now + 0.6);
+      this.audioEngine.instrumentEngine.noteOff(instrumentId, 67, now + 0.8);
+    }, 600);
+  }
+
+  public addInstrumentTrack(instrumentId: string) {
+    const def = INSTRUMENT_CATALOG.find((i) => i.id === instrumentId);
+    const name = def ? def.name : 'New Instrument';
+    const color = def ? def.color : '#38bdf8';
+    const id = `track-inst-${Date.now()}`;
+
+    const newTrack: ChannelTrack = {
+      id,
+      name,
+      type: 'instrument',
+      instrumentId,
+      color,
+      volume: 0.85,
+      pan: 0,
+      mute: false,
+      solo: false,
+      mixerChannelIndex: 5,
+      steps: {
+        [this.state.selectedPatternId]: Array.from({ length: 16 }, () => ({ active: false, velocity: 0.8 })),
+      },
+    };
+
+    this.state.tracks.push(newTrack);
+    this.setSelectedTrack(id);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+    this.auditionTrack(newTrack);
+  }
+
+  public changeTrackInstrument(trackId: string, instrumentId: string) {
+    const track = this.state.tracks.find((t) => t.id === trackId);
+    const def = INSTRUMENT_CATALOG.find((i) => i.id === instrumentId);
+    if (track && def) {
+      track.type = 'instrument';
+      track.instrumentId = instrumentId;
+      track.name = def.name;
+      track.color = def.color;
+      this.syncAudioEngineData();
+      this.notify();
+      this.saveToStorage();
+      this.auditionTrack(track);
+    }
+  }
+
+  public changeDrumKit(kitId: DrumKitId) {
+    this.state.tracks.forEach((t) => {
+      if (t.type === 'drum') {
+        t.drumKitId = kitId;
+      }
+    });
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
   }
 
   public setStepVelocity(trackId: string, stepIndex: number, velocity: number) {

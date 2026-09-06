@@ -1,0 +1,26 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Eve's Mixer
+GenericName=Digital Audio Workstation
+Comment=FL Studio-inspired DAW: Beat Sequencer, Synthesizers, Mic Looper, Guitar Rig & VST Host
+Exec=/home/eve/.local/bin/eves-mixer %U
+Icon=eves-mixer
+Terminal=false
+Categories=AudioVideo;Audio;AudioVideoEditing;Midi;Sequencer;Music;Mixer;
+Keywords=eve;eves;mixer;daw;fl studio;flstudio;music;beat;sequencer;synth;synthesizer;vst;guitar;looper;recording;mic;audio;producer;studio;
+StartupNotify=true
+StartupWMClass=brave-zykoraa.github.io__eves-mixer-Default;eves-mixer;
+Actions=app;browser;local;
+
+[Desktop Action app]
+Name=Open as Desktop App
+Exec=/home/eve/.local/bin/eves-mixer --app
+
+[Desktop Action browser]
+Name=Open in Default Web Browser
+Exec=/usr/bin/xdg-open https://zykoraa.github.io/eves-mixer/
+
+[Desktop Action local]
+Name=Open Local Dev Workspace
+Exec=/home/eve/.local/bin/eves-mixer --local

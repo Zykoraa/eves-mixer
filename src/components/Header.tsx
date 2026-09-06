@@ -46,6 +46,7 @@ interface HeaderProps {
   onOpenTapeColor?: () => void;
   onOpenBeatbox?: () => void;
   onOpenChordArchitect?: () => void;
+  onOpenGuide?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -60,6 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenTapeColor,
   onOpenBeatbox,
   onOpenChordArchitect,
+  onOpenGuide,
 }) => {
   const [state, store] = useDawStore();
   const [tapTimes, setTapTimes] = useState<number[]>([]);
@@ -124,7 +126,13 @@ export const Header: React.FC<HeaderProps> = ({
     reader.readAsText(file);
   };
 
-  const navItems: { id: ViewTab; label: string; icon: React.ReactNode; color: string }[] = [
+  const simpleNavItems: { id: ViewTab; label: string; icon: React.ReactNode; color: string }[] = [
+    { id: 'channelRack', label: '1. Drums & Beat', icon: <Grid size={15} />, color: 'text-orange-400' },
+    { id: 'pianoRoll', label: '2. Melody & Chords', icon: <Music size={15} />, color: 'text-sky-400' },
+    { id: 'playlist', label: '3. Song Arranger', icon: <Layers size={15} />, color: 'text-purple-400' },
+  ];
+
+  const proNavItems: { id: ViewTab; label: string; icon: React.ReactNode; color: string }[] = [
     { id: 'channelRack', label: 'Channel Rack', icon: <Grid size={15} />, color: 'text-orange-400' },
     { id: 'pianoRoll', label: 'Piano Roll', icon: <Music size={15} />, color: 'text-sky-400' },
     { id: 'playlist', label: 'Playlist', icon: <Layers size={15} />, color: 'text-purple-400' },
@@ -141,6 +149,8 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'midiLearn', label: 'MIDI Learn', icon: <Sliders size={15} />, color: 'text-cyan-400' },
   ];
 
+  const navItems = state.simpleMode ? simpleNavItems : proNavItems;
+
   return (
     <header className="bg-[#181a1f] border-b border-[#2e323b] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 shadow-lg select-none z-30">
       {/* Brand & Transport Mode */}
@@ -153,11 +163,41 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold tracking-tight text-white text-base">Eve's Mixer</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-mono font-bold border border-orange-500/30">
-                PRO DAW
+                {state.simpleMode ? 'EASY BEAT' : 'PRO DAW'}
               </span>
             </div>
-            <p className="text-[10px] text-gray-400 -mt-0.5 tracking-wide">FL Studio Inspired Workstation</p>
+            <p className="text-[10px] text-gray-400 -mt-0.5 tracking-wide">
+              {state.simpleMode ? 'Simple Beatmaker' : 'FL Studio Inspired Workstation'}
+            </p>
           </div>
+        </div>
+
+        {/* Mode Switch: Simple vs Pro Studio */}
+        <div className="flex items-center bg-[#101217] p-0.5 rounded-lg border border-[#353945]">
+          <button
+            onClick={() => store.setSimpleMode(true)}
+            title="Clean, easy-to-use mode for fast beatmaking"
+            className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+              state.simpleMode
+                ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-sm'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Sparkles size={12} className={state.simpleMode ? 'text-yellow-300' : ''} />
+            <span>Simple</span>
+          </button>
+          <button
+            onClick={() => store.setSimpleMode(false)}
+            title="Full advanced workstation with all tools, VSTs and routing"
+            className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+              !state.simpleMode
+                ? 'bg-[#272a38] text-white border border-[#444a5e] shadow-sm'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Sliders size={12} />
+            <span>Pro</span>
+          </button>
         </div>
 
         {/* FL Studio Mode Switch: PAT / SONG */}
@@ -343,136 +383,186 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Universal Search Button (Ctrl+K) */}
-        <button
-          onClick={onOpenSearch}
-          title="Quick Search Instruments, VSTs, Amps & Actions (Ctrl+K)"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#141620] hover:bg-[#202330] border border-[#34384a] text-xs font-mono text-gray-300 hover:text-white transition-all shadow-xs group"
-        >
-          <Search size={14} className="text-orange-400 group-hover:scale-110 transition-transform" />
-          <span className="hidden xl:inline text-gray-300">Search</span>
-          <kbd className="hidden sm:inline px-1 py-0.2 rounded bg-[#252838] text-[9px] font-bold text-gray-400 border border-[#383d54]">
-            Ctrl+K
-          </kbd>
-        </button>
+        {state.simpleMode ? (
+          <>
+            {/* Quick 30-Sec Guide */}
+            {onOpenGuide && (
+              <button
+                onClick={onOpenGuide}
+                title="Simple 30-Second Guide: How to make a beat"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 hover:text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <HelpCircle size={14} className="text-sky-400" />
+                <span>Quick Guide</span>
+              </button>
+            )}
 
-        {/* Eve Gross Beat Quick Access */}
-        <button
-          onClick={onOpenGrossBeat}
-          title="Eve Gross Beat (Time-Glitch FX Unit)"
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
-        >
-          <Zap size={14} />
-          <span className="hidden lg:inline">Gross Beat</span>
-        </button>
+            {/* 1-Click Trap Beat Demo */}
+            <button
+              onClick={() => store.loadSampleTrapBeat()}
+              title="Load Complete Sample Trap Beat"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white text-xs font-bold shadow-md shadow-orange-600/30 transition-all hover:scale-105 cursor-pointer"
+            >
+              <Flame size={14} className="text-yellow-300" />
+              <span>Trap Beat</span>
+            </button>
 
-        {/* AI Stem Separator Quick Access */}
-        <button
-          onClick={onOpenStemSeparator}
-          title="AI 4-Stem Audio Separator"
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
-        >
-          <Layers size={14} />
-          <span className="hidden lg:inline">Stems</span>
-        </button>
+            {/* Make Chords */}
+            {onOpenChordArchitect && (
+              <button
+                onClick={onOpenChordArchitect}
+                title="Make chords without music theory"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 hover:text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <Music size={14} />
+                <span>Chords</span>
+              </button>
+            )}
 
-        {/* IndexedDB Project Library */}
-        <button
-          onClick={onOpenProjectLibrary}
-          title="Project Library (IndexedDB Storage)"
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
-        >
-          <HardDrive size={14} />
-          <span className="hidden lg:inline">Library</span>
-        </button>
+            {/* Export Song */}
+            <button
+              onClick={onOpenExport}
+              title="Export Song (WAV / MP3)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all hover:scale-105 cursor-pointer"
+            >
+              <Download size={14} />
+              <span>Export</span>
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Universal Search Button (Ctrl+K) */}
+            <button
+              onClick={onOpenSearch}
+              title="Quick Search Instruments, VSTs, Amps & Actions (Ctrl+K)"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#141620] hover:bg-[#202330] border border-[#34384a] text-xs font-mono text-gray-300 hover:text-white transition-all shadow-xs group"
+            >
+              <Search size={14} className="text-orange-400 group-hover:scale-110 transition-transform" />
+              <span className="hidden xl:inline text-gray-300">Search</span>
+              <kbd className="hidden sm:inline px-1 py-0.2 rounded bg-[#252838] text-[9px] font-bold text-gray-400 border border-[#383d54]">
+                Ctrl+K
+              </kbd>
+            </button>
 
-        {/* Radio Mastering Suite (LUFS) */}
-        {onOpenMastering && (
-          <button
-            onClick={onOpenMastering}
-            title="Eve Maximizer & Mastering Suite (BS.1770-4 LUFS)"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
-          >
-            <Sliders size={14} />
-            <span className="hidden lg:inline">Master</span>
-          </button>
+            {/* Eve Gross Beat Quick Access */}
+            <button
+              onClick={onOpenGrossBeat}
+              title="Eve Gross Beat (Time-Glitch FX Unit)"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+            >
+              <Zap size={14} />
+              <span className="hidden lg:inline">Gross Beat</span>
+            </button>
+
+            {/* AI Stem Separator Quick Access */}
+            <button
+              onClick={onOpenStemSeparator}
+              title="AI 4-Stem Audio Separator"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+            >
+              <Layers size={14} />
+              <span className="hidden lg:inline">Stems</span>
+            </button>
+
+            {/* IndexedDB Project Library */}
+            <button
+              onClick={onOpenProjectLibrary}
+              title="Project Library (IndexedDB Storage)"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+            >
+              <HardDrive size={14} />
+              <span className="hidden lg:inline">Library</span>
+            </button>
+
+            {/* Radio Mastering Suite (LUFS) */}
+            {onOpenMastering && (
+              <button
+                onClick={onOpenMastering}
+                title="Eve Maximizer & Mastering Suite (BS.1770-4 LUFS)"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+              >
+                <Sliders size={14} />
+                <span className="hidden lg:inline">Master</span>
+              </button>
+            )}
+
+            {/* Vintage Tape & Vinyl Color */}
+            {onOpenTapeColor && (
+              <button
+                onClick={onOpenTapeColor}
+                title="Eve Tape Color & Vinyl Texture (RC-20 Style)"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+              >
+                <Disc size={14} />
+                <span className="hidden lg:inline">Tape FX</span>
+              </button>
+            )}
+
+            {/* AI Beatbox-to-Drums */}
+            {onOpenBeatbox && (
+              <button
+                onClick={onOpenBeatbox}
+                title="AI Beatbox-to-MIDI Drum Transcriber"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+              >
+                <Mic size={14} />
+                <span className="hidden lg:inline">Beatbox</span>
+              </button>
+            )}
+
+            {/* Scaler Chord Architect */}
+            {onOpenChordArchitect && (
+              <button
+                onClick={onOpenChordArchitect}
+                title="Chord Progression Architect & Smart Voice Leading"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+              >
+                <Music size={14} />
+                <span className="hidden lg:inline">Chords</span>
+              </button>
+            )}
+
+            {/* Standard Multi-Track MIDI Export */}
+            <button
+              onClick={() => MidiExporter.downloadMidi(state.projectName, state.bpm, state.tracks, state.patterns)}
+              title="Export Standard Multi-Track MIDI (.MID)"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-[#222533] hover:bg-[#2d3144] border border-[#393e54] text-sky-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+            >
+              <Music size={13} />
+              <span className="hidden lg:inline">.MID</span>
+            </button>
+
+            {/* 1-Click Trap Beat Demo */}
+            <button
+              onClick={() => store.loadSampleTrapBeat()}
+              title="Load Complete Sample Trap Beat (Punchy Kick, 808 Slides, Fast Hats & Dark Melody)"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white text-xs font-bold shadow-md shadow-orange-600/30 transition-all hover:scale-105"
+            >
+              <Flame size={14} className="text-yellow-300" />
+              <span>Trap Beat</span>
+            </button>
+
+            {/* Inspiration Generator Button */}
+            <button
+              onClick={onOpenInspiration}
+              title="Inspiration Engine (Chords, Beats & AI Melodies)"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-bold shadow-md shadow-purple-600/30 transition-all hover:scale-105"
+            >
+              <Sparkles size={14} className="animate-spin text-yellow-300" />
+              <span>Inspiration</span>
+            </button>
+
+            {/* Export Song */}
+            <button
+              onClick={onOpenExport}
+              title="Export Song (WAV / Stems)"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all hover:scale-105"
+            >
+              <Download size={14} />
+              <span>Export</span>
+            </button>
+          </>
         )}
-
-        {/* Vintage Tape & Vinyl Color */}
-        {onOpenTapeColor && (
-          <button
-            onClick={onOpenTapeColor}
-            title="Eve Tape Color & Vinyl Texture (RC-20 Style)"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
-          >
-            <Disc size={14} />
-            <span className="hidden lg:inline">Tape FX</span>
-          </button>
-        )}
-
-        {/* AI Beatbox-to-Drums */}
-        {onOpenBeatbox && (
-          <button
-            onClick={onOpenBeatbox}
-            title="AI Beatbox-to-MIDI Drum Transcriber"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
-          >
-            <Mic size={14} />
-            <span className="hidden lg:inline">Beatbox</span>
-          </button>
-        )}
-
-        {/* Scaler Chord Architect */}
-        {onOpenChordArchitect && (
-          <button
-            onClick={onOpenChordArchitect}
-            title="Chord Progression Architect & Smart Voice Leading"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
-          >
-            <Music size={14} />
-            <span className="hidden lg:inline">Chords</span>
-          </button>
-        )}
-
-        {/* Standard Multi-Track MIDI Export */}
-        <button
-          onClick={() => MidiExporter.downloadMidi(state.projectName, state.bpm, state.tracks, state.patterns)}
-          title="Export Standard Multi-Track MIDI (.MID)"
-          className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-[#222533] hover:bg-[#2d3144] border border-[#393e54] text-sky-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
-        >
-          <Music size={13} />
-          <span className="hidden lg:inline">.MID</span>
-        </button>
-
-        {/* 1-Click Trap Beat Demo */}
-        <button
-          onClick={() => store.loadSampleTrapBeat()}
-          title="Load Complete Sample Trap Beat (Punchy Kick, 808 Slides, Fast Hats & Dark Melody)"
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white text-xs font-bold shadow-md shadow-orange-600/30 transition-all hover:scale-105"
-        >
-          <Flame size={14} className="text-yellow-300" />
-          <span>Trap Beat</span>
-        </button>
-
-        {/* Inspiration Generator Button */}
-        <button
-          onClick={onOpenInspiration}
-          title="Inspiration Engine (Chords, Beats & AI Melodies)"
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-bold shadow-md shadow-purple-600/30 transition-all hover:scale-105"
-        >
-          <Sparkles size={14} className="animate-spin text-yellow-300" />
-          <span>Inspiration</span>
-        </button>
-
-        {/* Export Song */}
-        <button
-          onClick={onOpenExport}
-          title="Export Song (WAV / Stems)"
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all hover:scale-105"
-        >
-          <Download size={14} />
-          <span>Export</span>
-        </button>
 
         {/* Project Save / Load */}
         <button

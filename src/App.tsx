@@ -27,10 +27,13 @@ import { MasteringSuiteModal } from './components/MasteringSuiteModal';
 import { TapeColorModal } from './components/TapeColorModal';
 import { BeatboxModal } from './components/BeatboxModal';
 import { ChordArchitectModal } from './components/ChordArchitectModal';
+import { SimpleGuideModal } from './components/SimpleGuideModal';
+import { SimpleStartBanner } from './components/SimpleStartBanner';
 import { useDawStore } from './store/useDawStore';
 
 export const App: React.FC = () => {
   const [state, store] = useDawStore();
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isInspirationOpen, setIsInspirationOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -77,6 +80,13 @@ export const App: React.FC = () => {
         onOpenMastering={() => setIsMasteringOpen(true)}
         onOpenTapeColor={() => setIsTapeColorOpen(true)}
         onOpenBeatbox={() => setIsBeatboxOpen(true)}
+        onOpenChordArchitect={() => setIsChordArchitectOpen(true)}
+        onOpenGuide={() => setIsGuideOpen(true)}
+      />
+
+      {/* Quick Start Simple Mode Banner */}
+      <SimpleStartBanner
+        onOpenGuide={() => setIsGuideOpen(true)}
         onOpenChordArchitect={() => setIsChordArchitectOpen(true)}
       />
 
@@ -172,6 +182,12 @@ export const App: React.FC = () => {
         onOpenTapeColor={() => setIsTapeColorOpen(true)}
         onOpenBeatbox={() => setIsBeatboxOpen(true)}
         onOpenChordArchitect={() => setIsChordArchitectOpen(true)}
+      />
+
+      {/* Simple 30-Second Guide Modal */}
+      <SimpleGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
       />
     </div>
   );

@@ -510,6 +510,7 @@ export interface DawStoreState {
   playbackMode: PlaybackMode;
   metronome: boolean;
   activeView: ViewTab;
+  simpleMode: boolean;
   currentStep: number;
   currentBar: number;
   
@@ -628,6 +629,7 @@ class Store {
       bpm: initialState.bpm || 135,
       swing: initialState.swing !== undefined ? initialState.swing : 12,
       activeView: 'channelRack',
+      simpleMode: initialState.simpleMode !== undefined ? initialState.simpleMode : true,
       currentStep: 0,
       currentBar: 0,
       metronome: false,
@@ -815,6 +817,7 @@ class Store {
         clips: this.state.clips,
         selectedKey: this.state.selectedKey,
         selectedScale: this.state.selectedScale,
+        simpleMode: this.state.simpleMode,
       };
       localStorage.setItem('eves_mixer_saved_state', JSON.stringify(copy));
     } catch (e) {
@@ -823,6 +826,24 @@ class Store {
   }
 
   // --- Actions ---
+
+  public toggleSimpleMode() {
+    this.state.simpleMode = !this.state.simpleMode;
+    if (this.state.simpleMode && !['channelRack', 'pianoRoll', 'playlist'].includes(this.state.activeView)) {
+      this.state.activeView = 'channelRack';
+    }
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public setSimpleMode(enabled: boolean) {
+    this.state.simpleMode = enabled;
+    if (this.state.simpleMode && !['channelRack', 'pianoRoll', 'playlist'].includes(this.state.activeView)) {
+      this.state.activeView = 'channelRack';
+    }
+    this.notify();
+    this.saveToStorage();
+  }
 
   public async togglePlay() {
     if (this.state.isPlaying) {

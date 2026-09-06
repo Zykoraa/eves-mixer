@@ -68,6 +68,10 @@ export const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({ isOpen, on
                 <span className="text-gray-400">Audition Track:</span>
                 <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Click Track</kbd>
               </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between col-span-2">
+                <span className="text-orange-400 font-bold">Universal Quick Search:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Ctrl+K or /</kbd>
+              </div>
             </div>
           </div>
 

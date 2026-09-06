@@ -16,6 +16,8 @@ import {
   Sparkles,
   ExternalLink,
   Volume2,
+  Search,
+  X,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { AudioEngine } from '../audio/AudioEngine';
@@ -34,6 +36,7 @@ export const VstPatchbay: React.FC = () => {
   const midi = MidiManager.getInstance();
 
   const [selectedCategory, setSelectedCategory] = useState<VstCategory | 'all'>('all');
+  const [vstSearchQuery, setVstSearchQuery] = useState('');
   const [isAddPluginModalOpen, setIsAddPluginModalOpen] = useState(false);
   const [targetSlotForAdd, setTargetSlotForAdd] = useState<number>(0);
 
@@ -67,9 +70,17 @@ export const VstPatchbay: React.FC = () => {
     { id: 'external', label: 'Web Audio Modules (WAM)' },
   ];
 
-  const filteredVsts = AVAILABLE_VSTS.filter(
-    (v) => selectedCategory === 'all' || v.category === selectedCategory
-  );
+  const filteredVsts = AVAILABLE_VSTS.filter((v) => {
+    const matchesCat = selectedCategory === 'all' || v.category === selectedCategory;
+    const q = vstSearchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      v.name.toLowerCase().includes(q) ||
+      v.description.toLowerCase().includes(q) ||
+      v.developer.toLowerCase().includes(q) ||
+      v.category.toLowerCase().includes(q);
+    return matchesCat && matchesSearch;
+  });
 
   const handleOpenAddModal = (slotIdx: number) => {
     setTargetSlotForAdd(slotIdx);
@@ -596,6 +607,26 @@ export const VstPatchbay: React.FC = () => {
               >
                 Close
               </button>
+            </div>
+
+            {/* Search Input Bar */}
+            <div className="px-5 py-2.5 bg-[#171924] border-b border-[#262a3a] flex items-center gap-2">
+              <Search size={16} className="text-indigo-400 shrink-0" />
+              <input
+                type="text"
+                value={vstSearchQuery}
+                onChange={(e) => setVstSearchQuery(e.target.value)}
+                placeholder="Search VSTs by name, category, or effect type..."
+                className="w-full bg-transparent text-xs font-mono text-white placeholder-gray-400 focus:outline-hidden"
+              />
+              {vstSearchQuery && (
+                <button
+                  onClick={() => setVstSearchQuery('')}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
             {/* Category Filter Pills */}

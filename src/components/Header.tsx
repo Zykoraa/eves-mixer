@@ -20,6 +20,7 @@ import {
   Compass,
   Guitar,
   Plug,
+  Search,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { NOTE_NAMES, SCALE_INTERVALS } from '../audio/Presets';
@@ -29,12 +30,14 @@ interface HeaderProps {
   onOpenInspiration: () => void;
   onOpenExport: () => void;
   onOpenShortcuts: () => void;
+  onOpenSearch: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenInspiration,
   onOpenExport,
   onOpenShortcuts,
+  onOpenSearch,
 }) => {
   const [state, store] = useDawStore();
   const [tapTimes, setTapTimes] = useState<number[]>([]);
@@ -292,6 +295,19 @@ export const Header: React.FC<HeaderProps> = ({
             LOCK
           </button>
         </div>
+
+        {/* Universal Search Button (Ctrl+K) */}
+        <button
+          onClick={onOpenSearch}
+          title="Quick Search Instruments, VSTs, Amps & Actions (Ctrl+K)"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#141620] hover:bg-[#202330] border border-[#34384a] text-xs font-mono text-gray-300 hover:text-white transition-all shadow-xs group"
+        >
+          <Search size={14} className="text-orange-400 group-hover:scale-110 transition-transform" />
+          <span className="hidden xl:inline text-gray-300">Search</span>
+          <kbd className="hidden sm:inline px-1 py-0.2 rounded bg-[#252838] text-[9px] font-bold text-gray-400 border border-[#383d54]">
+            Ctrl+K
+          </kbd>
+        </button>
 
         {/* Inspiration Generator Button */}
         <button

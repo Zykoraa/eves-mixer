@@ -23,6 +23,10 @@ import { NewToneEditorView } from './components/NewToneEditorView';
 import { GrossBeatModal } from './components/GrossBeatModal';
 import { StemSeparatorModal } from './components/StemSeparatorModal';
 import { ProjectLibraryModal } from './components/ProjectLibraryModal';
+import { MasteringSuiteModal } from './components/MasteringSuiteModal';
+import { TapeColorModal } from './components/TapeColorModal';
+import { BeatboxModal } from './components/BeatboxModal';
+import { ChordArchitectModal } from './components/ChordArchitectModal';
 import { useDawStore } from './store/useDawStore';
 
 export const App: React.FC = () => {
@@ -34,6 +38,10 @@ export const App: React.FC = () => {
   const [isGrossBeatOpen, setIsGrossBeatOpen] = useState(false);
   const [isStemSeparatorOpen, setIsStemSeparatorOpen] = useState(false);
   const [isProjectLibraryOpen, setIsProjectLibraryOpen] = useState(false);
+  const [isMasteringOpen, setIsMasteringOpen] = useState(false);
+  const [isTapeColorOpen, setIsTapeColorOpen] = useState(false);
+  const [isBeatboxOpen, setIsBeatboxOpen] = useState(false);
+  const [isChordArchitectOpen, setIsChordArchitectOpen] = useState(false);
 
   // Global search shortcut (Ctrl+K or Cmd+K or /)
   React.useEffect(() => {
@@ -66,6 +74,10 @@ export const App: React.FC = () => {
         onOpenGrossBeat={() => setIsGrossBeatOpen(true)}
         onOpenStemSeparator={() => setIsStemSeparatorOpen(true)}
         onOpenProjectLibrary={() => setIsProjectLibraryOpen(true)}
+        onOpenMastering={() => setIsMasteringOpen(true)}
+        onOpenTapeColor={() => setIsTapeColorOpen(true)}
+        onOpenBeatbox={() => setIsBeatboxOpen(true)}
+        onOpenChordArchitect={() => setIsChordArchitectOpen(true)}
       />
 
       {/* Main Studio Viewport */}
@@ -122,6 +134,26 @@ export const App: React.FC = () => {
         onClose={() => setIsProjectLibraryOpen(false)}
       />
 
+      <MasteringSuiteModal
+        isOpen={isMasteringOpen}
+        onClose={() => setIsMasteringOpen(false)}
+      />
+
+      <TapeColorModal
+        isOpen={isTapeColorOpen}
+        onClose={() => setIsTapeColorOpen(false)}
+      />
+
+      <BeatboxModal
+        isOpen={isBeatboxOpen}
+        onClose={() => setIsBeatboxOpen(false)}
+      />
+
+      <ChordArchitectModal
+        isOpen={isChordArchitectOpen}
+        onClose={() => setIsChordArchitectOpen(false)}
+      />
+
       <KeyboardShortcuts
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
@@ -136,6 +168,10 @@ export const App: React.FC = () => {
         onOpenGrossBeat={() => setIsGrossBeatOpen(true)}
         onOpenStemSeparator={() => setIsStemSeparatorOpen(true)}
         onOpenProjectLibrary={() => setIsProjectLibraryOpen(true)}
+        onOpenMastering={() => setIsMasteringOpen(true)}
+        onOpenTapeColor={() => setIsTapeColorOpen(true)}
+        onOpenBeatbox={() => setIsBeatboxOpen(true)}
+        onOpenChordArchitect={() => setIsChordArchitectOpen(true)}
       />
     </div>
   );

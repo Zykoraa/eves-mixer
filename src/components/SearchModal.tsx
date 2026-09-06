@@ -49,6 +49,10 @@ interface SearchModalProps {
   onOpenGrossBeat?: () => void;
   onOpenStemSeparator?: () => void;
   onOpenProjectLibrary?: () => void;
+  onOpenMastering?: () => void;
+  onOpenTapeColor?: () => void;
+  onOpenBeatbox?: () => void;
+  onOpenChordArchitect?: () => void;
 }
 
 export const SearchModal: React.FC<SearchModalProps> = ({
@@ -60,6 +64,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   onOpenGrossBeat,
   onOpenStemSeparator,
   onOpenProjectLibrary,
+  onOpenMastering,
+  onOpenTapeColor,
+  onOpenBeatbox,
+  onOpenChordArchitect,
 }) => {
   const [state, store] = useDawStore();
   const [query, setQuery] = useState('');
@@ -377,6 +385,74 @@ export const SearchModal: React.FC<SearchModalProps> = ({
         onSelect: () => {
           onClose();
           onOpenProjectLibrary();
+        },
+      });
+    }
+
+    if (onOpenMastering) {
+      items.push({
+        id: 'act-mastering',
+        title: 'Open Eve Maximizer & Mastering Suite',
+        subtitle: 'BS.1770-4 LUFS loudness meter, true-peak lookahead limiter & mono sub imager',
+        category: 'action',
+        badge: 'MASTERING',
+        badgeColor: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
+        icon: <Sliders size={16} className="text-teal-400" />,
+        tags: ['master', 'mastering', 'lufs', 'loudness', 'limiter', 'maximizer', 'peak'],
+        onSelect: () => {
+          onClose();
+          onOpenMastering();
+        },
+      });
+    }
+
+    if (onOpenTapeColor) {
+      items.push({
+        id: 'act-tape-color',
+        title: 'Open Eve Tape Color & Vinyl Texture',
+        subtitle: 'RC-20 style vintage tape wow & flutter, vinyl dust crackle & saturation',
+        category: 'action',
+        badge: 'ANALOG FX',
+        badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+        icon: <Activity size={16} className="text-amber-400" />,
+        tags: ['tape', 'vinyl', 'rc20', 'wow', 'flutter', 'saturation', 'crackle', 'lofi'],
+        onSelect: () => {
+          onClose();
+          onOpenTapeColor();
+        },
+      });
+    }
+
+    if (onOpenBeatbox) {
+      items.push({
+        id: 'act-beatbox',
+        title: 'Open AI Beatbox-to-Drums Transcriber',
+        subtitle: 'Hum or beatbox into your microphone and auto-populate the FL step sequencer',
+        category: 'action',
+        badge: 'AI BEATS',
+        badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30',
+        icon: <Mic size={16} className="text-red-400" />,
+        tags: ['beatbox', 'drums', 'mic', 'vocal', 'transcribe', 'kick', 'snare', 'ai'],
+        onSelect: () => {
+          onClose();
+          onOpenBeatbox();
+        },
+      });
+    }
+
+    if (onOpenChordArchitect) {
+      items.push({
+        id: 'act-chord-architect',
+        title: 'Open Chord Progression Architect',
+        subtitle: 'Scaler-style harmonic progressions with optimal voice leading and strumming',
+        category: 'action',
+        badge: 'CHORDS',
+        badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+        icon: <Music size={16} className="text-purple-400" />,
+        tags: ['chords', 'scaler', 'progression', 'voice leading', 'harmony', 'neo soul', 'jazz'],
+        onSelect: () => {
+          onClose();
+          onOpenChordArchitect();
         },
       });
     }

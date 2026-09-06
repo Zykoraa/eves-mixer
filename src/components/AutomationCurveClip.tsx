@@ -148,16 +148,40 @@ export const AutomationCurveClip: React.FC<AutomationCurveClipProps> = ({ clip, 
           <TrendingUp size={11} />
           <span className="truncate">{clip.name}</span>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            store.removeAutomationClip(clip.id);
-          }}
-          className="pointer-events-auto p-0.5 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400"
-          title="Delete Automation Clip"
-        >
-          <X size={11} />
-        </button>
+        <div className="flex items-center gap-1 pointer-events-auto">
+          <select
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation();
+              const val = e.target.value as 'sine' | 'triangle' | 'saw' | 'square' | 'sh' | 'pump' | 'riser';
+              if (val) {
+                store.applyLfoShape(clip.id, val);
+              }
+            }}
+            defaultValue=""
+            className="bg-[#12141cee] text-[8px] font-mono text-gray-300 rounded px-1 py-0.2 border border-[#34384c] focus:outline-none cursor-pointer"
+            title="Generate LFO Curve Shape"
+          >
+            <option value="" disabled>LFO</option>
+            <option value="pump">Pump</option>
+            <option value="riser">Riser</option>
+            <option value="sine">Sine</option>
+            <option value="triangle">Tri</option>
+            <option value="saw">Saw</option>
+            <option value="square">Square</option>
+            <option value="sh">S&H</option>
+          </select>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              store.removeAutomationClip(clip.id);
+            }}
+            className="p-0.5 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400"
+            title="Delete Automation Clip"
+          >
+            <X size={11} />
+          </button>
+        </div>
       </div>
 
       {/* SVG Canvas */}

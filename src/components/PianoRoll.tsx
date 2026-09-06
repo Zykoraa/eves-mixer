@@ -25,6 +25,7 @@ import { AudioEngine } from '../audio/AudioEngine';
 export const PianoRoll: React.FC = () => {
   const [state, store] = useDawStore();
   const [activeTool, setActiveTool] = useState<'pencil' | 'eraser' | 'chord' | 'chopper'>('pencil');
+  const [isSlideMode, setIsSlideMode] = useState<boolean>(false);
   const [selectedChordType, setSelectedChordType] = useState<string>('min7');
   const [noteDuration, setNoteDuration] = useState<number>(2); // in 16th steps
   const [chopperDivisions, setChopperDivisions] = useState<2 | 3 | 4 | 8>(4);
@@ -130,6 +131,7 @@ export const PianoRoll: React.FC = () => {
             startStep: step,
             durationSteps: noteDuration,
             velocity: 0.85,
+            isSlide: isSlideMode,
           });
         });
         auditionNote(actualMidi);
@@ -151,6 +153,7 @@ export const PianoRoll: React.FC = () => {
         startStep: step,
         durationSteps: noteDuration,
         velocity: 0.85,
+        isSlide: isSlideMode,
       });
       auditionNote(actualMidi);
     }
@@ -260,6 +263,20 @@ export const PianoRoll: React.FC = () => {
               <Layers size={14} />
             </button>
           </div>
+
+          {/* FL Studio Slide Note Toggle */}
+          <button
+            onClick={() => setIsSlideMode((prev) => !prev)}
+            className={`px-2.5 py-1 rounded text-xs font-mono font-bold flex items-center gap-1.5 border transition-all ${
+              isSlideMode
+                ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400 shadow-md shadow-cyan-500/30 ring-1 ring-cyan-400/50'
+                : 'bg-[#121316] text-gray-400 hover:text-gray-200 border-[#353945]'
+            }`}
+            title="FL Studio Slide Notes / 808 Pitch Glide (Click to toggle slide mode)"
+          >
+            <span className="text-cyan-400 font-bold text-xs">▲</span>
+            <span>SLIDE</span>
+          </button>
 
           {/* Chopper Options */}
           {activeTool === 'chopper' && (
@@ -453,13 +470,32 @@ export const PianoRoll: React.FC = () => {
                       >
                         {note && (
                           <div
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              store.updatePianoNote(note.id, { isSlide: !note.isSlide });
+                            }}
+                            title={
+                              note.isSlide
+                                ? `${midiToNoteName(midi)} [Slide Note - Right Click to Normal]`
+                                : `${midiToNoteName(midi)} [Right Click to Toggle Slide]`
+                            }
                             className={`absolute inset-0 m-0.5 rounded-xs flex items-center px-1 text-[9px] font-mono font-bold text-white shadow-md ${
-                              isStart
+                              note.isSlide
+                                ? isStart
+                                  ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 border-l-2 border-l-cyan-300 ring-1 ring-cyan-400/50'
+                                  : 'bg-purple-600/80'
+                                : isStart
                                 ? 'bg-gradient-to-r from-sky-400 to-sky-600 border-l-2 border-l-white'
                                 : 'bg-sky-600/80'
                             }`}
                           >
-                            {isStart && midiToNoteName(midi)}
+                            {isStart && (
+                              <span className="flex items-center gap-0.5 truncate">
+                                {note.isSlide && <span className="text-cyan-200 text-[8px]">▲</span>}
+                                <span>{midiToNoteName(midi)}</span>
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>

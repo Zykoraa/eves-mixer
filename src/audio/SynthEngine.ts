@@ -6,6 +6,7 @@ interface ActiveVoice {
   stopVoice: (time: number) => void;
   gainNode: GainNode;
   startTime: number;
+  oscillators: { osc: OscillatorNode; octaveMult: number }[];
 }
 
 export class SynthEngine {
@@ -129,6 +130,7 @@ export class SynthEngine {
 
     // Oscillators to stop later
     const oscsToStop: (AudioScheduledSourceNode)[] = [];
+    const activeOscs: { osc: OscillatorNode; octaveMult: number }[] = [];
 
     // Glide / Portamento calculation
     let startFreq = freq;
@@ -144,8 +146,9 @@ export class SynthEngine {
     } else {
       osc1.setPeriodicWave(this.getAntiAliasedWave(params.osc1Waveform));
     }
-    const osc1Freq = startFreq * Math.pow(2, params.osc1Octave);
-    const targetFreq1 = freq * Math.pow(2, params.osc1Octave);
+    const osc1Mult = Math.pow(2, params.osc1Octave);
+    const osc1Freq = startFreq * osc1Mult;
+    const targetFreq1 = freq * osc1Mult;
     osc1.frequency.setValueAtTime(osc1Freq, now);
     if (params.glide > 0) {
       osc1.frequency.exponentialRampToValueAtTime(targetFreq1, now + params.glide);
@@ -158,6 +161,7 @@ export class SynthEngine {
     osc1Gain.connect(filter);
     osc1.start(now);
     oscsToStop.push(osc1);
+    activeOscs.push({ osc: osc1, octaveMult: osc1Mult });
 
     // --- OSC 2 ---
     if (params.osc2Waveform === 'noise') {
@@ -179,8 +183,9 @@ export class SynthEngine {
       } else {
         osc2.setPeriodicWave(this.getAntiAliasedWave(params.osc2Waveform));
       }
-      const osc2Freq = startFreq * Math.pow(2, params.osc2Octave);
-      const targetFreq2 = freq * Math.pow(2, params.osc2Octave);
+      const osc2Mult = Math.pow(2, params.osc2Octave);
+      const osc2Freq = startFreq * osc2Mult;
+      const targetFreq2 = freq * osc2Mult;
       osc2.frequency.setValueAtTime(osc2Freq, now);
       if (params.glide > 0) {
         osc2.frequency.exponentialRampToValueAtTime(targetFreq2, now + params.glide);
@@ -193,14 +198,16 @@ export class SynthEngine {
       osc2Gain.connect(filter);
       osc2.start(now);
       oscsToStop.push(osc2);
+      activeOscs.push({ osc: osc2, octaveMult: osc2Mult });
     }
 
     // --- SUB OSCILLATOR ---
     if (params.subOscVolume > 0) {
       const subOsc = this.ctx.createOscillator();
       subOsc.type = 'sine';
-      const subFreq = (startFreq / 2);
-      const targetSubFreq = freq / 2;
+      const subMult = 0.5;
+      const subFreq = startFreq * subMult;
+      const targetSubFreq = freq * subMult;
       subOsc.frequency.setValueAtTime(subFreq, now);
       if (params.glide > 0) {
         subOsc.frequency.exponentialRampToValueAtTime(targetSubFreq, now + params.glide);
@@ -211,6 +218,7 @@ export class SynthEngine {
       subGain.connect(filter);
       subOsc.start(now);
       oscsToStop.push(subOsc);
+      activeOscs.push({ osc: subOsc, octaveMult: subMult });
     }
 
     // --- LFO ---
@@ -260,7 +268,36 @@ export class SynthEngine {
       stopVoice,
       gainNode: voiceGain,
       startTime: now,
+      oscillators: activeOscs,
     });
+  }
+
+  public slidePitch(targetMidi: number, startTime: number, duration: number): void {
+    const targetFreq = midiToFrequency(targetMidi);
+    const now = Math.max(startTime, this.ctx.currentTime);
+    const slideDuration = Math.max(0.015, duration);
+
+    this.voices.forEach((voice) => {
+      voice.oscillators.forEach(({ osc, octaveMult }) => {
+        try {
+          const currentF = osc.frequency.value;
+          osc.frequency.cancelScheduledValues(now);
+          osc.frequency.setValueAtTime(currentF, now);
+          osc.frequency.exponentialRampToValueAtTime(
+            Math.max(10, targetFreq * octaveMult),
+            now + slideDuration
+          );
+        } catch {
+          // ignore already stopped
+        }
+      });
+      voice.midiNote = targetMidi;
+    });
+    this.lastMidiNote = targetMidi;
+  }
+
+  public hasActiveVoices(): boolean {
+    return this.voices.size > 0;
   }
 
   public noteOff(midiNote: number, time: number, _params?: SynthParameters): void {

@@ -145,8 +145,24 @@ export const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({ isOpen, on
                 <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Playlist REC</kbd>
               </div>
               <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
-                <span className="text-gray-400">Gross Beat Glitch:</span>
-                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Top Bar / Search</kbd>
+                <span className="text-cyan-400 font-bold">808 / Note Slide:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Right Click / ▲ SLIDE</kbd>
+              </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-teal-400 font-bold">Radio Mastering:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Top Bar / Master</kbd>
+              </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-amber-400 font-bold">Tape / Vinyl FX:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Top Bar / Tape FX</kbd>
+              </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-red-400 font-bold">AI Beatbox to Drums:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Top Bar / Beatbox</kbd>
+              </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-purple-400 font-bold">Chord Architect:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Top Bar / Chords</kbd>
               </div>
             </div>
           </div>

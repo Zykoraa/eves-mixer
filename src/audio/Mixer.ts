@@ -1,6 +1,8 @@
 import { EffectsChain } from './EffectsChain';
 import { FxSettings } from '../types/daw';
 import { GrossBeatEngine } from './GrossBeatEngine';
+import { TapeColorEngine } from './TapeColorEngine';
+import { MasteringSuite } from './MasteringSuite';
 
 export class MixerChannelNode {
   public index: number;
@@ -105,14 +107,38 @@ export class Mixer {
     // Master Channel (Index 0)
     this.masterChannel = new MixerChannelNode(ctx, 0);
 
-    // Wire Gross Beat into Master Channel output
+    // Wire Master FX Processors: Gross Beat -> Tape Color -> Mastering Suite
     const grossBeat = GrossBeatEngine.getInstance();
     grossBeat.init(ctx);
+
+    const tapeColor = TapeColorEngine.getInstance();
+    tapeColor.init(ctx);
+
+    const mastering = MasteringSuite.getInstance();
+    mastering.init(ctx);
+
+    // masterChannel -> grossBeat
     if (grossBeat.inputNode && grossBeat.outputNode) {
       this.masterChannel.analyserNode.connect(grossBeat.inputNode);
-      grossBeat.outputNode.connect(this.masterSoftClipper);
     } else {
       this.masterChannel.analyserNode.connect(this.masterSoftClipper);
+    }
+
+    // grossBeat -> tapeColor
+    if (grossBeat.outputNode && tapeColor.inputNode) {
+      grossBeat.outputNode.connect(tapeColor.inputNode);
+    }
+
+    // tapeColor -> mastering
+    if (tapeColor.outputNode && mastering.inputNode) {
+      tapeColor.outputNode.connect(mastering.inputNode);
+    }
+
+    // mastering -> soft clipper
+    if (mastering.outputNode) {
+      mastering.outputNode.connect(this.masterSoftClipper);
+    } else if (tapeColor.outputNode) {
+      tapeColor.outputNode.connect(this.masterSoftClipper);
     }
 
     // 8 Insert Channels (Index 1 to 8)

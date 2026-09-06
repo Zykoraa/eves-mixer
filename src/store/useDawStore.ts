@@ -23,6 +23,10 @@ import {
   SpectralCollisionAlert,
   MidiCcMapping,
   ImpulseResponseMeta,
+  MasteringParameters,
+  TapeColorParameters,
+  BeatboxHit,
+  VoicedChord,
 } from '../types/daw';
 import {
   DEFAULT_SYNTH_PARAMS,
@@ -55,6 +59,9 @@ import { MidiLearnManager, MidiLearnTarget } from '../audio/MidiLearnManager';
 import { OfflineRenderer } from '../audio/OfflineRenderer';
 import { PlaylistRecorder } from '../audio/PlaylistRecorder';
 import { ProjectStorage } from './projectStorage';
+import { MasteringSuite } from '../audio/MasteringSuite';
+import { TapeColorEngine } from '../audio/TapeColorEngine';
+import { ChordArchitect } from '../audio/ChordArchitect';
 
 // Default initial tracks
 const CURRENT_STORAGE_VERSION = 'v2_pro_producer';
@@ -492,6 +499,7 @@ export const DEFAULT_GUITAR_PEDALS: GuitarPedalSettings = {
 
 // Custom State Store & Pub/Sub
 export interface DawStoreState {
+  _version?: string;
   projectName: string;
   isPlaying: boolean;
   isRecordArmed: boolean;
@@ -577,6 +585,12 @@ export interface DawStoreState {
 
   // 6. Impulse Responses
   impulseResponses: ImpulseResponseMeta[];
+
+  // 7. Radio Mastering Suite
+  masteringParams: MasteringParameters;
+
+  // 8. Vintage Tape Color
+  tapeColorParams: TapeColorParameters;
 }
 
 class Store {
@@ -598,30 +612,32 @@ class Store {
         } else {
           console.info("Upgrading project state to Eve's Mixer Pro Studio Audio Engine");
         }
-      } catch (e) {
-        console.warn('Could not parse saved state:', e);
+      } catch (err) {
+        console.warn('Failed to parse saved state:', err);
       }
     }
 
     this.state = {
-      projectName: initialState.projectName || "Eve's Mixer Project",
+      _version: CURRENT_STORAGE_VERSION,
+      projectName: initialState.projectName || 'Nightfall Trap Heat',
       isPlaying: false,
-      isRecordArmed: false,
       isRecording: false,
-      bpm: initialState.bpm || 140,
-      swing: initialState.swing || 0,
+      isRecordArmed: false,
       playbackMode: initialState.playbackMode || 'pattern',
-      metronome: false,
+      bpm: initialState.bpm || 135,
+      swing: initialState.swing !== undefined ? initialState.swing : 12,
       activeView: 'channelRack',
       currentStep: 0,
       currentBar: 0,
+      metronome: false,
+      snapToScale: true,
+      selectedKey: initialState.selectedKey || 'F#',
+      selectedScale: initialState.selectedScale || 'minor',
+      selectedTrackId: 'track-1',
+      selectedPatternId: 'pat-1',
+      selectedMixerChannelIndex: 0,
       tracks: initialState.tracks || createInitialTracks(),
       patterns: initialState.patterns || createInitialPatterns(),
-      selectedPatternId: 'pat-1',
-      selectedTrackId: 't-synth',
-      selectedKey: initialState.selectedKey || 'C',
-      selectedScale: initialState.selectedScale || 'minor',
-      snapToScale: false,
       clips: initialState.clips || createInitialClips(),
       playlistTracks: Array.from({ length: 8 }, (_, i) => ({
         id: `pl-track-${i + 1}`,
@@ -631,24 +647,24 @@ class Store {
         solo: false,
         volume: 0.85,
         pan: 0,
+        isArmed: false,
       })),
       totalBars: 16,
-      mixerChannels: createInitialMixerChannels(),
-      selectedMixerChannelIndex: 1,
-      looperDecks: createInitialLooperDecks(),
+      mixerChannels: initialState.mixerChannels || createInitialMixerChannels(),
+      looperDecks: initialState.looperDecks || createInitialLooperDecks(),
       selectedLooperDeckIndex: 0,
       isMicActive: false,
       directMonitor: false,
       micGain: 1.0,
-      synthParams: { ...DEFAULT_SYNTH_PARAMS },
-      selectedPresetId: 'default_lead',
+      synthParams: initialState.synthParams || { ...DEFAULT_SYNTH_PARAMS },
+      selectedPresetId: 'init',
 
-      // Guitar Rig
+      // Guitar Rig State
       isGuitarActive: false,
       guitarDeviceId: '',
       guitarChannelMode: 'left',
       guitarGain: 0,
-      guitarDirectMonitor: false,
+      guitarDirectMonitor: true,
       isGuitarTuning: false,
       guitarTunerMute: false,
       guitarNoiseGate: true,
@@ -659,33 +675,13 @@ class Store {
       guitarPedals: { ...DEFAULT_GUITAR_PEDALS },
       guitarRoutingChannel: 7,
 
-      // VST Host
-      vstInstances: [
+      // VST Host State
+      vstInstances: initialState.vstInstances || [
         {
-          instanceId: 'vst-def-tape',
-          pluginId: 'tape_machine',
-          name: 'Eve Vintage Tape 1974',
-          channelIndex: 0,
-          slotIndex: 0,
-          enabled: true,
-          mix: 0.8,
-          parameters: { drive: 40, headBump: 3.0, wowFlutter: 20, tapeSpeed: '15ips', tapeHiss: false },
-        },
-        {
-          instanceId: 'vst-def-guitar',
-          pluginId: 'guitar_rig',
-          name: "Eve Guitar Rig & Amp VST",
-          channelIndex: 7,
-          slotIndex: 0,
-          enabled: true,
-          mix: 1.0,
-          parameters: { ampModel: 'fenderClean', drive: 4.0, bass: 0, mid: 1, treble: 2, presence: 1, cabModel: 'v30_4x12', tsOverdrive: false, vintageFuzz: false },
-        },
-        {
-          instanceId: 'vst-def-tune',
+          instanceId: 'vst-autotune-default',
           pluginId: 'vocal_tune',
           name: 'Eve Vocal Auto-Tune',
-          channelIndex: 6,
+          channelIndex: 7,
           slotIndex: 0,
           enabled: true,
           mix: 0.9,
@@ -716,6 +712,31 @@ class Store {
 
       // 6. Impulse Responses
       impulseResponses: FACTORY_IMPULSES,
+
+      // 7. Radio Mastering Suite
+      masteringParams: initialState.masteringParams || {
+        enabled: false,
+        inputGainDb: 0,
+        targetLufs: -14,
+        ceilingDb: -0.3,
+        stereoWidth: 1.0,
+        monoSubEnabled: true,
+        softClipWarmth: 35,
+        limiterReleaseMs: 50,
+      },
+
+      // 8. Vintage Tape Color
+      tapeColorParams: initialState.tapeColorParams || {
+        enabled: false,
+        wowFlutter: 40,
+        flutterRate: 1.2,
+        tapeDrive: 35,
+        vinylNoise: 25,
+        vinylTone: 50,
+        dropouts: 20,
+        spaceReverb: 15,
+        mix: 75,
+      },
     };
 
     // Connect MIDI Learn listeners
@@ -1171,6 +1192,17 @@ class Store {
     const pat = this.state.patterns.find((p) => p.id === this.state.selectedPatternId);
     if (!pat) return;
     pat.notes = pat.notes.filter((n) => n.id !== noteId);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public updatePianoNote(noteId: string, updates: Partial<PianoNote>) {
+    const pat = this.state.patterns.find((p) => p.id === this.state.selectedPatternId);
+    if (!pat) return;
+    const note = pat.notes.find((n) => n.id === noteId);
+    if (!note) return;
+    Object.assign(note, updates);
     this.syncAudioEngineData();
     this.notify();
     this.saveToStorage();
@@ -1820,6 +1852,144 @@ class Store {
     const clip = this.state.automationClips.find((c) => c.id === clipId);
     if (!clip || clip.nodes.length <= 1) return;
     clip.nodes = clip.nodes.filter((n) => n.id !== nodeId);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public applyLfoShape(clipId: string, shape: 'sine' | 'triangle' | 'saw' | 'square' | 'sh' | 'pump' | 'riser') {
+    const clip = this.state.automationClips.find((c) => c.id === clipId);
+    if (!clip) return;
+
+    const lengthBars = clip.lengthBars;
+    const nodes: AutomationNode[] = [];
+
+    if (shape === 'pump') {
+      for (let b = 0; b < lengthBars; b++) {
+        nodes.push({ id: `node_${b}_0`, bar: b, value: 0.1, tension: 0.4 });
+        nodes.push({ id: `node_${b}_1`, bar: b + 0.5, value: 0.9, tension: 0 });
+        nodes.push({ id: `node_${b}_2`, bar: b + 0.95, value: 1.0, tension: -0.2 });
+      }
+      nodes.push({ id: `node_end`, bar: lengthBars, value: 1.0, tension: 0 });
+    } else if (shape === 'riser') {
+      nodes.push({ id: `node_r0`, bar: 0, value: 0.05, tension: 0.65 });
+      nodes.push({ id: `node_r1`, bar: lengthBars * 0.7, value: 0.5, tension: 0.4 });
+      nodes.push({ id: `node_r2`, bar: lengthBars, value: 1.0, tension: 0 });
+    } else if (shape === 'sine') {
+      const steps = lengthBars * 4;
+      for (let s = 0; s <= steps; s++) {
+        const t = (s / steps) * (lengthBars * 2 * Math.PI);
+        const val = 0.5 + 0.45 * Math.sin(t);
+        nodes.push({
+          id: `node_sine_${s}`,
+          bar: Number(((s / steps) * lengthBars).toFixed(2)),
+          value: Number(val.toFixed(2)),
+          tension: 0,
+        });
+      }
+    } else if (shape === 'saw') {
+      for (let b = 0; b < lengthBars; b++) {
+        nodes.push({ id: `saw_${b}_0`, bar: b, value: 1.0, tension: 0 });
+        nodes.push({ id: `saw_${b}_1`, bar: b + 0.98, value: 0.05, tension: 0 });
+      }
+      nodes.push({ id: `saw_end`, bar: lengthBars, value: 1.0, tension: 0 });
+    } else if (shape === 'square') {
+      for (let b = 0; b < lengthBars; b++) {
+        nodes.push({ id: `sq_${b}_0`, bar: b, value: 1.0, tension: 0 });
+        nodes.push({ id: `sq_${b}_1`, bar: b + 0.49, value: 1.0, tension: 0 });
+        nodes.push({ id: `sq_${b}_2`, bar: b + 0.5, value: 0.05, tension: 0 });
+        nodes.push({ id: `sq_${b}_3`, bar: b + 0.99, value: 0.05, tension: 0 });
+      }
+      nodes.push({ id: `sq_end`, bar: lengthBars, value: 1.0, tension: 0 });
+    } else if (shape === 'sh') {
+      for (let b = 0; b <= lengthBars; b++) {
+        const val = 0.15 + Math.random() * 0.75;
+        nodes.push({ id: `sh_${b}`, bar: b, value: Number(val.toFixed(2)), tension: 0 });
+      }
+    }
+
+    clip.nodes = nodes;
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public updatePlaylistClip(clipId: string, updates: Partial<PlaylistClip>) {
+    const clip = this.state.clips.find((c) => c.id === clipId);
+    if (!clip) return;
+    Object.assign(clip, updates);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public updateMasteringParams(updates: Partial<MasteringParameters>) {
+    this.state.masteringParams = { ...this.state.masteringParams, ...updates };
+    MasteringSuite.getInstance().applyParameters(updates);
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public updateTapeColorParams(updates: Partial<TapeColorParameters>) {
+    this.state.tapeColorParams = { ...this.state.tapeColorParams, ...updates };
+    TapeColorEngine.getInstance().applyParameters(updates);
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public applyBeatboxHits(hits: BeatboxHit[], targetPatternId?: string) {
+    const patternId = targetPatternId || this.state.selectedPatternId;
+    const pattern = this.state.patterns.find((p) => p.id === patternId);
+    if (!pattern) return;
+
+    const kickTrack = this.state.tracks.find((t) => t.type === 'drum' && t.soundId === 'kick') || this.state.tracks[0];
+    const snareTrack = this.state.tracks.find((t) => t.type === 'drum' && (t.soundId === 'snare' || t.soundId === 'clap')) || this.state.tracks[1];
+    const hatTrack = this.state.tracks.find((t) => t.type === 'drum' && (t.soundId === 'hihat_closed' || t.soundId === 'hihat_open')) || this.state.tracks[2];
+
+    hits.forEach((hit) => {
+      let track = kickTrack;
+      if (hit.drumClass === 'snare') track = snareTrack;
+      else if (hit.drumClass === 'hihat') track = hatTrack;
+
+      if (!track.steps[patternId]) {
+        track.steps[patternId] = Array.from({ length: 32 }, () => ({ active: false, velocity: 0.8 }));
+      }
+      if (track.steps[patternId][hit.step]) {
+        track.steps[patternId][hit.step] = {
+          active: true,
+          velocity: hit.velocity,
+        };
+      }
+    });
+
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public applyVoicedChordsToPianoRoll(
+    chords: VoicedChord[],
+    trackId: string,
+    startStep: number = 0,
+    strumSpeedMs: number = 18
+  ) {
+    const pattern = this.state.patterns.find((p) => p.id === this.state.selectedPatternId);
+    if (!pattern) return;
+
+    const newNotes = ChordArchitect.getInstance().toPianoNotes(
+      chords,
+      trackId,
+      startStep,
+      strumSpeedMs,
+      this.state.bpm
+    );
+
+    const maxEndStep = startStep + chords.reduce((acc, c) => acc + c.durationSteps, 0);
+    pattern.notes = pattern.notes.filter(
+      (n) => n.trackId !== trackId || n.startStep < startStep || n.startStep >= maxEndStep
+    );
+    pattern.notes.push(...newNotes);
+
     this.syncAudioEngineData();
     this.notify();
     this.saveToStorage();

@@ -356,6 +356,15 @@ export class AudioEngine {
           if (!track || track.mute) continue;
           const mixerChan = this.mixer.getChannel(track.mixerChannelIndex);
 
+          // FL Studio Slide Note
+          if (note.isSlide) {
+            const durSeconds = (note.durationSteps * 60) / this.bpm / 4;
+            if (track.type === 'synth') {
+              this.synthEngine.slidePitch(note.midiNote, time, durSeconds);
+            }
+            continue;
+          }
+
           if (track.type === 'synth' && this.synthParams) {
             this.synthEngine.noteOn(note.midiNote, note.velocity * track.volume, time, this.synthParams, mixerChan.inputNode);
             const durSeconds = (note.durationSteps * 60) / this.bpm / 4;
@@ -405,11 +414,55 @@ export class AudioEngine {
         buffer = await this.ctx.decodeAudioData(arrayBuf);
         this.audioBufferCache.set(clip.audioBlobUrl, buffer);
       }
+
+      // Handle reverse playback
+      let playBuffer = buffer;
+      if (clip.isReversed) {
+        const revKey = `${clip.audioBlobUrl}_reversed`;
+        let revBuffer = this.audioBufferCache.get(revKey);
+        if (!revBuffer) {
+          revBuffer = this.ctx.createBuffer(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+          for (let c = 0; c < buffer.numberOfChannels; c++) {
+            const src = buffer.getChannelData(c);
+            const dst = revBuffer.getChannelData(c);
+            for (let i = 0; i < src.length; i++) {
+              dst[i] = src[src.length - 1 - i];
+            }
+          }
+          this.audioBufferCache.set(revKey, revBuffer);
+        }
+        playBuffer = revBuffer;
+      }
+
       const source = this.ctx.createBufferSource();
-      source.buffer = buffer;
+      source.buffer = playBuffer;
+
+      // Playback rate / Time-stretch factor
+      const rate = clip.playbackRate && clip.playbackRate > 0 ? clip.playbackRate : 1.0;
+      source.playbackRate.setValueAtTime(rate, time);
+
+      // Gain envelope for fades
+      const clipGain = this.ctx.createGain();
+      const durSeconds = (clip.lengthBars * 240) / this.bpm;
+      const offsetSeconds = Math.max(0, clip.slipOffsetSeconds || 0);
+
       const trackChan = this.mixer.getChannel(Math.min(8, clip.trackIndex + 1));
-      source.connect(trackChan.inputNode);
-      source.start(time);
+      source.connect(clipGain);
+      clipGain.connect(trackChan.inputNode);
+
+      // Fade-in / Fade-out
+      if (clip.fadeInBars && clip.fadeInBars > 0) {
+        const fadeSec = (clip.fadeInBars * 240) / this.bpm;
+        clipGain.gain.setValueAtTime(0.0001, time);
+        clipGain.gain.linearRampToValueAtTime(1.0, time + fadeSec);
+      }
+      if (clip.fadeOutBars && clip.fadeOutBars > 0) {
+        const fadeSec = (clip.fadeOutBars * 240) / this.bpm;
+        clipGain.gain.setValueAtTime(1.0, time + durSeconds - fadeSec);
+        clipGain.gain.linearRampToValueAtTime(0.0001, time + durSeconds);
+      }
+
+      source.start(time, offsetSeconds, durSeconds);
     } catch (err) {
       console.warn('Could not play audio clip:', err);
     }

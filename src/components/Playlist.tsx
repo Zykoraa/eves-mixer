@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Circle,
   Radio,
+  X,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { PlaylistClip, AutomationTargetType } from '../types/daw';
@@ -383,9 +384,8 @@ export const Playlist: React.FC = () => {
                     return (
                       <div
                         key={clip.id}
-                        onClick={() => store.removePlaylistClip(clip.id)}
-                        title={`${clip.name} (Click to remove)`}
-                        className="absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between text-xs font-mono font-bold text-white shadow-md z-10 cursor-pointer overflow-hidden group hover:brightness-110"
+                        title={`${clip.name} (${clip.lengthBars} Bars)`}
+                        className="absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between text-xs font-mono font-bold text-white shadow-md z-10 overflow-hidden group hover:brightness-110 select-none"
                         style={{
                           left: `${clip.startBar * 80 + 2}px`,
                           width: `${clip.lengthBars * 80 - 4}px`,
@@ -393,11 +393,63 @@ export const Playlist: React.FC = () => {
                           borderColor: clip.color,
                         }}
                       >
-                        <div className="flex items-center gap-1 truncate">
+                        <div className="flex items-center gap-1.5 truncate">
                           {clip.type === 'pattern' ? <Music size={12} /> : <Mic size={12} />}
                           <span className="truncate">{clip.name}</span>
+                          {clip.isReversed && (
+                            <span className="text-[8px] px-1 py-0.2 rounded bg-orange-500/80 text-white font-bold">
+                              REV
+                            </span>
+                          )}
                         </div>
-                        <span className="text-[10px] opacity-75">{clip.lengthBars}B</span>
+
+                        <div className="flex items-center gap-1.5 opacity-90">
+                          {clip.type === 'audio' && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  store.updatePlaylistClip(clip.id, { isReversed: !clip.isReversed });
+                                }}
+                                className={`px-1 py-0.5 rounded text-[9px] font-bold transition-colors ${
+                                  clip.isReversed
+                                    ? 'bg-orange-500 text-white'
+                                    : 'bg-black/40 text-gray-300 hover:text-white hover:bg-black/60'
+                                }`}
+                                title="Reverse Audio Playback"
+                              >
+                                REV
+                              </button>
+                              <select
+                                value={clip.playbackRate || 1.0}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  store.updatePlaylistClip(clip.id, { playbackRate: Number(e.target.value) });
+                                }}
+                                className="bg-black/50 text-[9px] font-mono text-amber-300 rounded px-1 py-0.5 border border-amber-400/30 cursor-pointer"
+                                title="Time-Stretch Playback Rate"
+                              >
+                                <option value={0.5}>0.5x</option>
+                                <option value={0.75}>0.75x</option>
+                                <option value={1.0}>1.0x</option>
+                                <option value={1.5}>1.5x</option>
+                                <option value={2.0}>2.0x</option>
+                              </select>
+                            </>
+                          )}
+                          <span className="text-[10px] opacity-75">{clip.lengthBars}B</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              store.removePlaylistClip(clip.id);
+                            }}
+                            className="p-0.5 rounded hover:bg-red-500/40 text-gray-300 hover:text-white"
+                            title="Remove Clip"
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}

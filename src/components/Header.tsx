@@ -26,6 +26,7 @@ import {
   Circle,
   Zap,
   HardDrive,
+  Disc,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { NOTE_NAMES, SCALE_INTERVALS } from '../audio/Presets';
@@ -40,6 +41,10 @@ interface HeaderProps {
   onOpenGrossBeat: () => void;
   onOpenStemSeparator: () => void;
   onOpenProjectLibrary: () => void;
+  onOpenMastering?: () => void;
+  onOpenTapeColor?: () => void;
+  onOpenBeatbox?: () => void;
+  onOpenChordArchitect?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -50,6 +55,10 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenGrossBeat,
   onOpenStemSeparator,
   onOpenProjectLibrary,
+  onOpenMastering,
+  onOpenTapeColor,
+  onOpenBeatbox,
+  onOpenChordArchitect,
 }) => {
   const [state, store] = useDawStore();
   const [tapTimes, setTapTimes] = useState<number[]>([]);
@@ -375,6 +384,54 @@ export const Header: React.FC<HeaderProps> = ({
           <HardDrive size={14} />
           <span className="hidden lg:inline">Library</span>
         </button>
+
+        {/* Radio Mastering Suite (LUFS) */}
+        {onOpenMastering && (
+          <button
+            onClick={onOpenMastering}
+            title="Eve Maximizer & Mastering Suite (BS.1770-4 LUFS)"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+          >
+            <Sliders size={14} />
+            <span className="hidden lg:inline">Master</span>
+          </button>
+        )}
+
+        {/* Vintage Tape & Vinyl Color */}
+        {onOpenTapeColor && (
+          <button
+            onClick={onOpenTapeColor}
+            title="Eve Tape Color & Vinyl Texture (RC-20 Style)"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+          >
+            <Disc size={14} />
+            <span className="hidden lg:inline">Tape FX</span>
+          </button>
+        )}
+
+        {/* AI Beatbox-to-Drums */}
+        {onOpenBeatbox && (
+          <button
+            onClick={onOpenBeatbox}
+            title="AI Beatbox-to-MIDI Drum Transcriber"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+          >
+            <Mic size={14} />
+            <span className="hidden lg:inline">Beatbox</span>
+          </button>
+        )}
+
+        {/* Scaler Chord Architect */}
+        {onOpenChordArchitect && (
+          <button
+            onClick={onOpenChordArchitect}
+            title="Chord Progression Architect & Smart Voice Leading"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+          >
+            <Music size={14} />
+            <span className="hidden lg:inline">Chords</span>
+          </button>
+        )}
 
         {/* Standard Multi-Track MIDI Export */}
         <button

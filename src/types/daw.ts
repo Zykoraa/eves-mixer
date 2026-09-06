@@ -58,6 +58,7 @@ export interface PianoNote {
   startStep: number; // in 16th steps (0 to 63)
   durationSteps: number; // length in 16th steps (minimum 1)
   velocity: number; // 0.0 to 1.0
+  isSlide?: boolean; // FL Studio style slide note
 }
 
 export interface ChannelTrack {
@@ -103,6 +104,11 @@ export interface PlaylistClip {
   color: string;
   type: 'pattern' | 'audio' | 'automation';
   audioBlobUrl?: string;
+  playbackRate?: number; // playback rate / speed factor (0.25 to 4.0)
+  slipOffsetSeconds?: number; // internal offset within the audio buffer (seconds)
+  fadeInBars?: number; // fade in length in bars
+  fadeOutBars?: number; // fade out length in bars
+  isReversed?: boolean; // whether audio buffer plays backwards
 }
 
 export interface PlaylistTrack {
@@ -442,4 +448,88 @@ export interface StoredProjectMeta {
   updatedAt: number;
   trackCount: number;
   durationBars: number;
+}
+
+// =========================================================================
+// 10. RADIO MASTERING SUITE & LUFS METER
+// =========================================================================
+export interface MasteringParameters {
+  enabled: boolean;
+  inputGainDb: number; // -12 to +12 dB
+  targetLufs: number; // -14 (Spotify), -9 (Club), -7 (Loud), etc.
+  ceilingDb: number; // -1.0 to -0.1 dB True Peak
+  stereoWidth: number; // 0.0 (Mono) to 2.0 (Ultra-Wide, 1.0 = normal)
+  monoSubEnabled: boolean; // Mono bass below 120Hz
+  softClipWarmth: number; // 0 to 100%
+  limiterReleaseMs: number; // 10 to 500ms
+}
+
+export interface LufsMeterResult {
+  momentaryLufs: number; // -70 to 0 LUFS (400ms window)
+  shortTermLufs: number; // -70 to 0 LUFS (3s window)
+  integratedLufs: number; // Program LUFS
+  truePeakDb: number; // True peak dBFS
+  gainReductionDb: number; // Dynamic limiter reduction
+}
+
+// =========================================================================
+// 11. VINTAGE TAPE / VINYL COLOR FX ("Eve RC-20 Color")
+// =========================================================================
+export interface TapeColorParameters {
+  enabled: boolean;
+  wowFlutter: number; // 0 to 100%
+  flutterRate: number; // 0.1 to 8 Hz
+  tapeDrive: number; // 0 to 100% (warmth/saturation)
+  vinylNoise: number; // 0 to 100% (dust/crackle/hiss)
+  vinylTone: number; // 0 (Dark) to 100 (Bright)
+  dropouts: number; // 0 to 100% (aged tape micro-dips)
+  spaceReverb: number; // 0 to 100% (spring/diffuser)
+  mix: number; // 0 to 100% dry/wet
+}
+
+// =========================================================================
+// 12. AI BEATBOX-TO-MIDI TRANSCRIBER
+// =========================================================================
+export type DrumHitClass = 'kick' | 'snare' | 'hihat';
+
+export interface BeatboxHit {
+  id: string;
+  time: number; // in seconds from start
+  step: number; // quantized 16th step (0 to 31)
+  drumClass: DrumHitClass;
+  confidence: number; // 0.0 to 1.0
+  velocity: number; // 0.0 to 1.0
+}
+
+export interface BeatboxDetectionResult {
+  audioBuffer: AudioBuffer;
+  duration: number;
+  hits: BeatboxHit[];
+  bpm: number;
+}
+
+// =========================================================================
+// 13. CHORD PROGRESSION ARCHITECT & SMART VOICE LEADING
+// =========================================================================
+export interface VoicedChord {
+  name: string; // e.g. "Dm9", "G13", "Cmaj9"
+  romanNumeral: string; // e.g. "ii9", "V13", "Imaj9"
+  midiNotes: number[]; // optimal voice-led chromatic pitches
+  rootMidi: number;
+  durationSteps: number; // default 4 or 8
+}
+
+export interface ChordProgressionTemplate {
+  id: string;
+  name: string;
+  genre: 'neoSoul' | 'darkTrap' | 'drill' | 'synthwave' | 'cityPop' | 'lofi' | 'cinematic' | 'rnb';
+  desc: string;
+  key: string;
+  scale: string;
+  chords: {
+    name: string;
+    roman: string;
+    intervals: number[]; // relative to root
+    inversion?: number;
+  }[];
 }

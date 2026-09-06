@@ -3,6 +3,8 @@ import { DrumSynth } from './DrumSynth';
 import { SynthEngine } from './SynthEngine';
 import { LooperStation } from './LooperStation';
 import { InstrumentEngine } from './InstrumentEngine';
+import { GuitarEngine } from './GuitarEngine';
+import { VstEngine } from './VstEngine';
 import { ChannelTrack, Pattern, PlaylistClip, PlaybackMode, SynthParameters } from '../types/daw';
 
 export class AudioEngine {
@@ -14,6 +16,8 @@ export class AudioEngine {
   public synthEngine: SynthEngine;
   public instrumentEngine: InstrumentEngine;
   public looperStation: LooperStation;
+  public guitarEngine: GuitarEngine;
+  public vstEngine: VstEngine;
 
   // Transport & Clock State
   public isPlaying: boolean = false;
@@ -57,6 +61,14 @@ export class AudioEngine {
     // Route looper to insert channel 6 by default (Channel 6 = Looper)
     const looperChannel = this.mixer.getChannel(6);
     this.looperStation = new LooperStation(this.ctx, looperChannel.inputNode);
+
+    // Initialize Guitar Engine & route to insert channel 7 (Channel 7 = Guitar)
+    this.guitarEngine = GuitarEngine.getInstance(this.ctx);
+    const guitarChannel = this.mixer.getChannel(7);
+    this.guitarEngine.routeToMixerChannel(guitarChannel);
+
+    // Initialize VST Host Engine
+    this.vstEngine = VstEngine.getInstance(this.ctx);
   }
 
   public static getInstance(): AudioEngine {

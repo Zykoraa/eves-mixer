@@ -220,7 +220,17 @@ export interface SynthParameters {
 }
 
 export type PlaybackMode = 'pattern' | 'song';
-export type ViewTab = 'channelRack' | 'pianoRoll' | 'playlist' | 'mixer' | 'synth' | 'looper' | 'fxRack' | 'browser';
+export type ViewTab =
+  | 'channelRack'
+  | 'pianoRoll'
+  | 'playlist'
+  | 'mixer'
+  | 'synth'
+  | 'looper'
+  | 'fxRack'
+  | 'browser'
+  | 'guitarRig'
+  | 'vstPatchbay';
 
 export type MusicalScale = 
   | 'chromatic'

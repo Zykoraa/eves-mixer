@@ -18,6 +18,8 @@ import {
   Layers,
   Cpu,
   Compass,
+  Guitar,
+  Plug,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { NOTE_NAMES, SCALE_INTERVALS } from '../audio/Presets';
@@ -106,6 +108,8 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'looper', label: 'LoopStation', icon: <Mic size={15} />, color: 'text-yellow-400' },
     { id: 'fxRack', label: 'FX Rack', icon: <Activity size={15} />, color: 'text-cyan-400' },
     { id: 'browser', label: 'Sounds', icon: <Compass size={15} />, color: 'text-amber-400' },
+    { id: 'guitarRig', label: 'Guitar Rig', icon: <Guitar size={15} />, color: 'text-red-400' },
+    { id: 'vstPatchbay', label: 'VST Host', icon: <Plug size={15} />, color: 'text-indigo-400' },
   ];
 
   return (

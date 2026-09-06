@@ -112,6 +112,54 @@
 
 ---
 
+### 12. 🎸 Eve Guitar Rig Pro (Shortcut `9`)
+- **Direct Instrument Input**:
+  - Connect your electric or acoustic guitar via USB audio interface (Focusrite, Behringer, etc.) or line-in.
+  - Input selector: Mono Left (Input 1), Mono Right (Input 2), or Stereo.
+  - High-Z Preamp Gain slider (-18dB to +18dB) with dual peak VU meters and clipping indicators.
+  - Studio Noise Gate with threshold control to eliminate 60Hz single-coil pickup hum.
+  - Direct zero-latency headphone monitoring toggle.
+- **Built-in Chromatic Guitar & Bass Tuner**:
+  - Real-time auto-correlation pitch detection algorithm calculating exact Hz, note, octave, and cents (-50 to +50).
+  - Prominent letter readout, analog-style cents needle meter, and neon green "IN TUNE" lock.
+  - Silent tuning mute switch.
+- **6 Tube Amp Heads**:
+  - *Fender '65 Twin Reverb* (Glassy cleans, scooped mids, tube sparkle).
+  - *Marshall '59 Super Lead Plexi* (Classic British rock crunch & mid punch).
+  - *Mesa Boogie Dual Rectifier* (Modern high-gain chug & liquid lead sustain).
+  - *Vox AC30 Top Boost* (60s British jangle chime & treble boost bite).
+  - *Ampeg SVT Classic Bass* (Thundering bass guitar rig authority).
+  - *Acoustic Studio DI Preamp* (Piezo de-quacking notch & body resonance).
+- **Speaker Cabinet IR Simulator**:
+  - Celestion 4x12 Vintage 30s, Fender 2x12 Open Back, Vox 1x12 Alnico Blue, Ampeg 8x10 Bass Fridge, or Direct DI bypass.
+- **7 Stompbox Floor Pedals**:
+  - Sustainer Compressor, TS9 Tube Screamer Overdrive, Vintage Silicon Fuzz, Auto-Wah Envelope Filter, Stereo Analog Chorus, Bucket-Brigade Tape Delay, and Spring Reverb Tank.
+  - Interactive 3PDT footswitches with click toggles and LED indicators.
+- **Direct Riff Recording**:
+  - Record guitar takes live and drop them directly onto the Playlist timeline arrangement or send to Eve LoopStation decks.
+
+### 13. 🔌 VST Host & Plugin Patchbay (Shortcut `0`)
+- **FL Studio-Style Mixer FX Slots**:
+  - 10 insert slots on every mixer channel (Master + 8 Inserts).
+  - Reorder, bypass, wet/dry mix, and parameter inspection.
+- **Built-in Studio Web VSTs**:
+  - **Eve Guitar Rig VST**: Insert the full guitar amplifier & cab processor on any mixer channel.
+  - **Eve Vocal Auto-Tune**: Real-time pitch correction with hard-tune speed, scale locking, and formant control.
+  - **Eve Vintage Tape 1974**: Analog reel-to-reel tape saturation, wow/flutter modulation, and 15/30 IPS speed modeling.
+  - **Eve Dimension D Chorus**: Roland Dimension D style 4-button spatial stereo widening without mono phase issues.
+  - **Eve 8-Bit Lo-Fi Degrader**: Variable bit depth (2 to 16 bits) and sample rate decimation for chiptune and hyperpop.
+  - **Eve 8-Band Surgical Dynamic EQ**: 8 parametric frequency bands with visual interactive response.
+  - **Eve Haas 3D Spatial Imager**: Micro-delay psychoacoustic spatial placement.
+  - **Eve SoundFont / SF2 Instrument Host**: Multi-timbral General MIDI soundbank synth with preset library and `.sf2` file loader.
+- **Web Audio Modules (WAM v2) Remote Loader**:
+  - Load external WAM plugins and AudioWorklet modules directly via CDN or GitHub URL.
+- **Live JavaScript DSP AudioWorklet Sandbox**:
+  - Code real-time DSP audio algorithms directly in the browser and test them immediately on live audio.
+- **Hardware Web MIDI Output Patchbay**:
+  - Send MIDI notes and CC messages from tracks to external hardware synthesizers, guitar multi-effects pedals, or desktop DAWs (via loopMIDI / IAC Bus).
+
+---
+
 ## ⌨️ Keyboard Shortcuts Reference
 
 | Key | Action |
@@ -127,6 +175,8 @@
 | `6` | Open Eve LoopStation |
 | `7` | Open FX Rack |
 | `8` | Open Sound Browser |
+| `9` | Open Eve Guitar Rig & Tuner |
+| `0` | Open VST Host & Plugin Patchbay |
 | `A, S, D, F, G, H, J, K, L` | White Piano Keys (C4 to E5) |
 | `W, E, T, Y, U, O, P` | Black Piano Keys (C#4 to D#5) |
 

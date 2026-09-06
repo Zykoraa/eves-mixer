@@ -5,7 +5,10 @@ export class MidiManager {
   private static instance: MidiManager | null = null;
   public isSupported: boolean = false;
   public connectedDevices: string[] = [];
+  public connectedOutputs: string[] = [];
 
+  private midiAccess: MIDIAccess | null = null;
+  private outputMap: Map<string, MIDIOutput> = new Map();
   private onNoteOnListeners: Set<NoteOnCallback> = new Set();
   private onNoteOffListeners: Set<NoteOffCallback> = new Set();
 
@@ -24,10 +27,11 @@ export class MidiManager {
     if (typeof navigator !== 'undefined' && 'requestMIDIAccess' in navigator) {
       this.isSupported = true;
       try {
-        const midiAccess = await navigator.requestMIDIAccess();
-        this.updateInputs(midiAccess);
-        midiAccess.onstatechange = () => {
-          this.updateInputs(midiAccess);
+        const access = await navigator.requestMIDIAccess({ sysex: false });
+        this.midiAccess = access;
+        this.updatePorts(access);
+        access.onstatechange = () => {
+          this.updatePorts(access);
         };
       } catch (err) {
         console.warn('Web MIDI Access request rejected:', err);
@@ -35,13 +39,25 @@ export class MidiManager {
     }
   }
 
-  private updateInputs(midiAccess: MIDIAccess) {
-    const devices: string[] = [];
-    midiAccess.inputs.forEach((input) => {
-      devices.push(input.name || 'Unknown MIDI Controller');
+  private updatePorts(access: MIDIAccess) {
+    // Inputs
+    const inDevices: string[] = [];
+    access.inputs.forEach((input) => {
+      const name = input.name || 'Unknown MIDI Controller';
+      inDevices.push(name);
       input.onmidimessage = (msg) => this.handleMidiMessage(msg);
     });
-    this.connectedDevices = devices;
+    this.connectedDevices = inDevices;
+
+    // Outputs
+    const outDevices: string[] = [];
+    this.outputMap.clear();
+    access.outputs.forEach((output) => {
+      const name = output.name || 'Unknown MIDI Output';
+      outDevices.push(name);
+      this.outputMap.set(name, output);
+    });
+    this.connectedOutputs = outDevices;
   }
 
   private handleMidiMessage(event: MIDIMessageEvent) {
@@ -60,6 +76,41 @@ export class MidiManager {
     } else if (command === 8) {
       // 0x8 = Note Off
       this.onNoteOffListeners.forEach((cb) => cb(note));
+    }
+  }
+
+  public sendNoteOn(note: number, velocity: number = 0.8, channel: number = 0, targetDeviceName?: string) {
+    const status = 0x90 | (channel & 0x0f);
+    const velByte = Math.max(0, Math.min(127, Math.round(velocity * 127)));
+    const data = [status, note & 0x7f, velByte];
+
+    if (targetDeviceName && this.outputMap.has(targetDeviceName)) {
+      this.outputMap.get(targetDeviceName)?.send(data);
+    } else {
+      // Send to all available outputs
+      this.outputMap.forEach((out) => out.send(data));
+    }
+  }
+
+  public sendNoteOff(note: number, channel: number = 0, targetDeviceName?: string) {
+    const status = 0x80 | (channel & 0x0f);
+    const data = [status, note & 0x7f, 0];
+
+    if (targetDeviceName && this.outputMap.has(targetDeviceName)) {
+      this.outputMap.get(targetDeviceName)?.send(data);
+    } else {
+      this.outputMap.forEach((out) => out.send(data));
+    }
+  }
+
+  public sendControlChange(controller: number, value: number, channel: number = 0, targetDeviceName?: string) {
+    const status = 0xb0 | (channel & 0x0f);
+    const data = [status, controller & 0x7f, value & 0x7f];
+
+    if (targetDeviceName && this.outputMap.has(targetDeviceName)) {
+      this.outputMap.get(targetDeviceName)?.send(data);
+    } else {
+      this.outputMap.forEach((out) => out.send(data));
     }
   }
 

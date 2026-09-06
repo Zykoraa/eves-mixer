@@ -108,6 +108,14 @@ export const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({ isOpen, on
                 <span className="text-gray-400">Sound Browser:</span>
                 <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">8</kbd>
               </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-gray-400">Eve Guitar Rig:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">9</kbd>
+              </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-gray-400">VST Host & Patchbay:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">0</kbd>
+              </div>
             </div>
           </div>
 

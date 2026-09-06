@@ -25,6 +25,19 @@ import {
 } from '../audio/Presets';
 import { AudioEngine } from '../audio/AudioEngine';
 import { INSTRUMENT_CATALOG } from '../audio/InstrumentEngine';
+import {
+  GuitarAmpModel,
+  GuitarCabModel,
+  GuitarAmpSettings,
+  GuitarPedalSettings,
+  GuitarEngine,
+} from '../audio/GuitarEngine';
+import {
+  VstPluginId,
+  VstPluginInstance,
+  VstEngine,
+} from '../audio/VstEngine';
+import { MidiManager } from '../audio/MidiManager';
 
 // Default initial tracks
 const createInitialTracks = (): ChannelTrack[] => [
@@ -245,6 +258,21 @@ const createInitialTracks = (): ChannelTrack[] => [
       'pat-1': Array.from({ length: 16 }, () => ({ active: false, velocity: 0.8 })),
     },
   },
+  {
+    id: 't-guitar',
+    name: 'Electric Lead Guitar',
+    type: 'instrument',
+    instrumentId: 'electric_guitar',
+    color: '#ef4444',
+    volume: 0.9,
+    pan: -0.1,
+    mute: false,
+    solo: false,
+    mixerChannelIndex: 7,
+    steps: {
+      'pat-1': Array.from({ length: 16 }, () => ({ active: false, velocity: 0.8 })),
+    },
+  },
 ];
 
 const createInitialPatterns = (): Pattern[] => [
@@ -292,8 +320,8 @@ const createInitialMixerChannels = (): MixerChannel[] => [
   { id: 'mix-4', name: 'Eve Synth', color: '#ec4899', volume: 0.85, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS, reverbEnabled: true, reverbMix: 0.3 } },
   { id: 'mix-5', name: 'Sampler/Keys', color: '#22c55e', volume: 0.85, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
   { id: 'mix-6', name: 'Mic Looper', color: '#eab308', volume: 0.9, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS, compressorEnabled: true, reverbEnabled: true, reverbMix: 0.2 } },
-  { id: 'mix-7', name: 'Insert 7', color: '#64748b', volume: 0.85, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
-  { id: 'mix-8', name: 'Insert 8', color: '#64748b', volume: 0.85, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
+  { id: 'mix-7', name: 'Guitar Rig', color: '#ef4444', volume: 0.9, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
+  { id: 'mix-8', name: 'VST Host', color: '#8b5cf6', volume: 0.85, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
 ];
 
 const createInitialLooperDecks = (): LooperDeck[] => [
@@ -302,6 +330,50 @@ const createInitialLooperDecks = (): LooperDeck[] => [
   { id: 'deck-3', deckNumber: 3, name: 'Deck 3 (Harmonies / Hook)', status: 'empty', recordedBars: 4, audioBuffer: null, volume: 0.8, pan: -0.2, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, waveform: [] },
   { id: 'deck-4', deckNumber: 4, name: 'Deck 4 (Acoustic / Lead)', status: 'empty', recordedBars: 4, audioBuffer: null, volume: 0.8, pan: 0.2, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, waveform: [] },
 ];
+
+export const DEFAULT_AMP_SETTINGS: GuitarAmpSettings = {
+  drive: 3.5,
+  bass: 0,
+  mid: 0,
+  treble: 2.0,
+  presence: 1.0,
+  master: 0.85,
+};
+
+export const DEFAULT_GUITAR_PEDALS: GuitarPedalSettings = {
+  compEnabled: false,
+  compSustain: 0.5,
+  compLevel: 0.8,
+
+  driveEnabled: false,
+  driveGain: 0.45,
+  driveTone: 0.5,
+  driveLevel: 0.75,
+
+  fuzzEnabled: false,
+  fuzzGain: 0.6,
+  fuzzTone: 0.5,
+  fuzzLevel: 0.7,
+
+  wahEnabled: false,
+  wahSensitivity: 0.65,
+  wahManual: 0.5,
+  wahMode: 'auto',
+
+  chorusEnabled: false,
+  chorusRate: 1.2,
+  chorusDepth: 0.35,
+  chorusMix: 0.4,
+
+  delayEnabled: false,
+  delayTime: 0.28,
+  delayFeedback: 0.35,
+  delayMix: 0.3,
+
+  reverbEnabled: false,
+  reverbSize: 2.2,
+  reverbMix: 0.35,
+};
 
 // Custom State Store & Pub/Sub
 export interface DawStoreState {
@@ -345,6 +417,29 @@ export interface DawStoreState {
   // Synth
   synthParams: SynthParameters;
   selectedPresetId: string;
+
+  // Guitar Rig State
+  isGuitarActive: boolean;
+  guitarDeviceId: string;
+  guitarChannelMode: 'left' | 'right' | 'stereo';
+  guitarGain: number; // dB (-24 to +24)
+  guitarDirectMonitor: boolean;
+  isGuitarTuning: boolean;
+  guitarTunerMute: boolean;
+  guitarNoiseGate: boolean;
+  guitarGateThreshold: number; // dB
+  guitarAmpModel: GuitarAmpModel;
+  guitarAmpSettings: GuitarAmpSettings;
+  guitarCabModel: GuitarCabModel;
+  guitarPedals: GuitarPedalSettings;
+  guitarRoutingChannel: number; // default 7
+
+  // VST Host State
+  vstInstances: VstPluginInstance[];
+  selectedVstChannelIndex: number;
+  selectedVstSlotIndex: number;
+  connectedMidiOutputs: string[];
+  selectedMidiOutput: string;
 }
 
 class Store {
@@ -403,6 +498,60 @@ class Store {
       micGain: 1.0,
       synthParams: { ...DEFAULT_SYNTH_PARAMS },
       selectedPresetId: 'default_lead',
+
+      // Guitar Rig
+      isGuitarActive: false,
+      guitarDeviceId: '',
+      guitarChannelMode: 'left',
+      guitarGain: 0,
+      guitarDirectMonitor: false,
+      isGuitarTuning: false,
+      guitarTunerMute: false,
+      guitarNoiseGate: true,
+      guitarGateThreshold: -50,
+      guitarAmpModel: 'fenderClean',
+      guitarAmpSettings: { ...DEFAULT_AMP_SETTINGS },
+      guitarCabModel: 'v30_4x12',
+      guitarPedals: { ...DEFAULT_GUITAR_PEDALS },
+      guitarRoutingChannel: 7,
+
+      // VST Host
+      vstInstances: [
+        {
+          instanceId: 'vst-def-tape',
+          pluginId: 'tape_machine',
+          name: 'Eve Vintage Tape 1974',
+          channelIndex: 0,
+          slotIndex: 0,
+          enabled: true,
+          mix: 0.8,
+          parameters: { drive: 40, headBump: 3.0, wowFlutter: 20, tapeSpeed: '15ips', tapeHiss: false },
+        },
+        {
+          instanceId: 'vst-def-guitar',
+          pluginId: 'guitar_rig',
+          name: "Eve Guitar Rig & Amp VST",
+          channelIndex: 7,
+          slotIndex: 0,
+          enabled: true,
+          mix: 1.0,
+          parameters: { ampModel: 'fenderClean', drive: 4.0, bass: 0, mid: 1, treble: 2, presence: 1, cabModel: 'v30_4x12', tsOverdrive: false, vintageFuzz: false },
+        },
+        {
+          instanceId: 'vst-def-tune',
+          pluginId: 'vocal_tune',
+          name: 'Eve Vocal Auto-Tune',
+          channelIndex: 6,
+          slotIndex: 0,
+          enabled: true,
+          mix: 0.9,
+          parameters: { retuneSpeed: 12, correctionAmount: 85, scale: 'minor', formantShift: 0, vibratoDepth: 0 },
+        },
+      ],
+      selectedVstChannelIndex: 7,
+      selectedVstSlotIndex: 0,
+      connectedMidiOutputs: [],
+      selectedMidiOutput: '',
     };
 
     // Connect AudioEngine events
@@ -952,6 +1101,160 @@ class Store {
     this.syncAudioEngineData();
     this.notify();
     this.saveToStorage();
+  }
+
+  // Guitar Rig Operations
+  public async toggleGuitarInput(deviceId?: string, channelMode?: 'left' | 'right' | 'stereo'): Promise<boolean> {
+    if (this.state.isGuitarActive) {
+      this.audioEngine.guitarEngine.stopGuitarInput();
+      this.state.isGuitarActive = false;
+    } else {
+      const mode = channelMode || this.state.guitarChannelMode;
+      const ok = await this.audioEngine.guitarEngine.startGuitarInput(deviceId, mode);
+      this.state.isGuitarActive = ok;
+      if (deviceId) this.state.guitarDeviceId = deviceId;
+      if (channelMode) this.state.guitarChannelMode = channelMode;
+    }
+    this.notify();
+    return this.state.isGuitarActive;
+  }
+
+  public setGuitarGain(gainDb: number) {
+    this.state.guitarGain = gainDb;
+    this.audioEngine.guitarEngine.setInputGain(gainDb);
+    this.notify();
+  }
+
+  public toggleGuitarDirectMonitor() {
+    this.state.guitarDirectMonitor = !this.state.guitarDirectMonitor;
+    this.audioEngine.guitarEngine.setDirectMonitor(this.state.guitarDirectMonitor, 0.85);
+    this.notify();
+  }
+
+  public setGuitarTuner(active: boolean, mute?: boolean) {
+    this.state.isGuitarTuning = active;
+    if (mute !== undefined) {
+      this.state.guitarTunerMute = mute;
+      this.audioEngine.guitarEngine.setTunerMute(mute);
+    }
+    this.notify();
+  }
+
+  public setGuitarGate(enabled: boolean, thresholdDb?: number) {
+    this.state.guitarNoiseGate = enabled;
+    this.audioEngine.guitarEngine.isGateEnabled = enabled;
+    if (thresholdDb !== undefined) {
+      this.state.guitarGateThreshold = thresholdDb;
+      this.audioEngine.guitarEngine.gateThresholdDb = thresholdDb;
+    }
+    this.notify();
+  }
+
+  public setGuitarAmpModel(model: GuitarAmpModel) {
+    this.state.guitarAmpModel = model;
+    this.audioEngine.guitarEngine.setAmpModel(model);
+    this.notify();
+  }
+
+  public setGuitarAmpSettings(settings: Partial<GuitarAmpSettings>) {
+    this.state.guitarAmpSettings = { ...this.state.guitarAmpSettings, ...settings };
+    this.audioEngine.guitarEngine.setAmpSettings(this.state.guitarAmpSettings);
+    this.notify();
+  }
+
+  public setGuitarCabModel(model: GuitarCabModel) {
+    this.state.guitarCabModel = model;
+    this.audioEngine.guitarEngine.setCabinet(model);
+    this.notify();
+  }
+
+  public setGuitarPedals(pedals: Partial<GuitarPedalSettings>) {
+    this.state.guitarPedals = { ...this.state.guitarPedals, ...pedals };
+    this.audioEngine.guitarEngine.setPedalSettings(this.state.guitarPedals);
+    this.notify();
+  }
+
+  public setGuitarRoutingChannel(channelIndex: number) {
+    this.state.guitarRoutingChannel = channelIndex;
+    const ch = this.audioEngine.mixer.getChannel(channelIndex);
+    this.audioEngine.guitarEngine.routeToMixerChannel(ch);
+    this.notify();
+  }
+
+  public startGuitarTakeRecording() {
+    this.audioEngine.guitarEngine.startRecordingTake();
+  }
+
+  public recordGuitarTakeToPlaylist() {
+    const buffer = this.audioEngine.guitarEngine.stopRecordingTake();
+    if (!buffer) return;
+
+    const clipId = `guitar-riff-${Date.now()}`;
+    const durationSeconds = buffer.duration;
+    const secondsPerBar = (60 / this.state.bpm) * 4;
+    const lengthBars = Math.max(1, Math.round(durationSeconds / secondsPerBar));
+
+    const newClip: PlaylistClip = {
+      id: clipId,
+      trackIndex: 4, // Guitar arrangement row
+      name: 'Guitar Riff Take',
+      startBar: 0,
+      lengthBars,
+      color: '#ef4444',
+      type: 'audio',
+    };
+    this.addPlaylistClip(newClip);
+  }
+
+  // VST Host Operations
+  public setSelectedVstChannel(channelIndex: number) {
+    this.state.selectedVstChannelIndex = channelIndex;
+    this.notify();
+  }
+
+  public setSelectedVstSlot(slotIndex: number) {
+    this.state.selectedVstSlotIndex = slotIndex;
+    this.notify();
+  }
+
+  public insertVstPlugin(channelIndex: number, pluginId: VstPluginId, slotIndex: number = 0) {
+    const instance = this.audioEngine.vstEngine.insertPlugin(channelIndex, pluginId, slotIndex);
+    this.state.vstInstances.push(instance);
+    this.state.selectedVstChannelIndex = channelIndex;
+    this.state.selectedVstSlotIndex = slotIndex;
+    this.notify();
+    return instance;
+  }
+
+  public removeVstPlugin(channelIndex: number, instanceId: string) {
+    this.audioEngine.vstEngine.removePlugin(channelIndex, instanceId);
+    this.state.vstInstances = this.state.vstInstances.filter((v) => v.instanceId !== instanceId);
+    this.notify();
+  }
+
+  public setVstBypass(channelIndex: number, instanceId: string, bypass: boolean) {
+    this.audioEngine.vstEngine.setPluginBypass(channelIndex, instanceId, bypass);
+    const inst = this.state.vstInstances.find((v) => v.instanceId === instanceId);
+    if (inst) inst.enabled = !bypass;
+    this.notify();
+  }
+
+  public setVstMix(channelIndex: number, instanceId: string, mix: number) {
+    this.audioEngine.vstEngine.setPluginMix(channelIndex, instanceId, mix);
+    const inst = this.state.vstInstances.find((v) => v.instanceId === instanceId);
+    if (inst) inst.mix = mix;
+    this.notify();
+  }
+
+  public setVstParam(channelIndex: number, instanceId: string, paramId: string, value: number | boolean | string) {
+    this.audioEngine.vstEngine.setPluginParameter(channelIndex, instanceId, paramId, value);
+    const inst = this.state.vstInstances.find((v) => v.instanceId === instanceId);
+    if (inst) inst.parameters[paramId] = value;
+    this.notify();
+  }
+
+  public sendMidiOut(note: number, velocity: number = 0.8, channel: number = 0) {
+    MidiManager.getInstance().sendNoteOn(note, velocity, channel, this.state.selectedMidiOutput || undefined);
   }
 }
 

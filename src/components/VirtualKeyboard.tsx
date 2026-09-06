@@ -95,6 +95,10 @@ export const VirtualKeyboard: React.FC = () => {
         store.setActiveView('fxRack');
       } else if (key === '8') {
         store.setActiveView('browser');
+      } else if (key === '9') {
+        store.setActiveView('guitarRig');
+      } else if (key === '0') {
+        store.setActiveView('vstPatchbay');
       }
     };
 

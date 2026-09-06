@@ -5,14 +5,13 @@ import {
   Sparkles,
   Trash2,
   Volume2,
-  Plus,
   ArrowUp,
   ArrowDown,
   Layers,
   Music,
+  Scissors,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
-import { PianoNote } from '../types/daw';
 import {
   isNoteInScale,
   midiToNoteName,
@@ -25,9 +24,11 @@ import { AudioEngine } from '../audio/AudioEngine';
 
 export const PianoRoll: React.FC = () => {
   const [state, store] = useDawStore();
-  const [activeTool, setActiveTool] = useState<'pencil' | 'eraser' | 'chord'>('pencil');
+  const [activeTool, setActiveTool] = useState<'pencil' | 'eraser' | 'chord' | 'chopper'>('pencil');
   const [selectedChordType, setSelectedChordType] = useState<string>('min7');
   const [noteDuration, setNoteDuration] = useState<number>(2); // in 16th steps
+  const [chopperDivisions, setChopperDivisions] = useState<2 | 3 | 4 | 8>(4);
+  const [chopperRamp, setChopperRamp] = useState<'flat' | 'up' | 'down'>('up');
 
   const currentPattern = state.patterns.find((p) => p.id === state.selectedPatternId) || state.patterns[0];
   const activeTrack = state.tracks.find((t) => t.id === state.selectedTrackId) || state.tracks[0];
@@ -68,8 +69,6 @@ export const PianoRoll: React.FC = () => {
     let actualMidi = midiNote;
     if (state.snapToScale && !isNoteInScale(midiNote, state.selectedKey, state.selectedScale)) {
       // Snap up or down
-      const intervals = SCALE_INTERVALS[state.selectedScale];
-      const rootIdx = NOTE_NAMES.indexOf(state.selectedKey);
       for (let offset = 1; offset <= 2; offset++) {
         if (isNoteInScale(midiNote + offset, state.selectedKey, state.selectedScale)) {
           actualMidi = midiNote + offset;
@@ -88,6 +87,33 @@ export const PianoRoll: React.FC = () => {
       );
       if (target) {
         store.removePianoNote(target.id);
+      }
+      return;
+    }
+
+    if (activeTool === 'chopper') {
+      const target = notes.find(
+        (n) => n.midiNote === actualMidi && step >= n.startStep && step < n.startStep + n.durationSteps
+      );
+      if (target) {
+        store.removePianoNote(target.id);
+        const subDuration = Math.max(1, Math.round(target.durationSteps / chopperDivisions));
+        for (let i = 0; i < chopperDivisions; i++) {
+          let vel = target.velocity;
+          if (chopperRamp === 'up') {
+            vel = target.velocity * (0.35 + 0.65 * (i / (chopperDivisions - 1)));
+          } else if (chopperRamp === 'down') {
+            vel = target.velocity * (1.0 - 0.65 * (i / (chopperDivisions - 1)));
+          }
+          store.addPianoNote({
+            id: `chop-${Date.now()}-${i}`,
+            trackId: activeTrack.id,
+            midiNote: target.midiNote,
+            startStep: target.startStep + i * subDuration,
+            durationSteps: subDuration,
+            velocity: vel,
+          });
+        }
       }
       return;
     }
@@ -195,7 +221,7 @@ export const PianoRoll: React.FC = () => {
             <span>Sounds</span>
           </button>
 
-          {/* Tool Switcher: Draw, Erase, Chord Stamper */}
+          {/* Tool Switcher: Draw, Erase, Chopper, Chord Stamper */}
           <div className="flex items-center bg-[#121316] p-0.5 rounded border border-[#353945]">
             <button
               onClick={() => setActiveTool('pencil')}
@@ -216,6 +242,15 @@ export const PianoRoll: React.FC = () => {
               <Eraser size={14} />
             </button>
             <button
+              onClick={() => setActiveTool('chopper')}
+              className={`p-1.5 rounded transition-all ${
+                activeTool === 'chopper' ? 'bg-amber-500 text-black font-bold' : 'text-gray-400 hover:text-white'
+              }`}
+              title="Note Chopper / Ratchet Tool (Alt+U)"
+            >
+              <Scissors size={14} />
+            </button>
+            <button
               onClick={() => setActiveTool('chord')}
               className={`p-1.5 rounded transition-all ${
                 activeTool === 'chord' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'
@@ -225,6 +260,40 @@ export const PianoRoll: React.FC = () => {
               <Layers size={14} />
             </button>
           </div>
+
+          {/* Chopper Options */}
+          {activeTool === 'chopper' && (
+            <div className="flex items-center gap-1.5 bg-[#121316] px-2 py-1 rounded border border-amber-500/40">
+              <span className="text-[10px] font-mono text-amber-400 font-bold">CHOP:</span>
+              {([2, 3, 4, 8] as const).map((div) => (
+                <button
+                  key={div}
+                  onClick={() => setChopperDivisions(div)}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                    chopperDivisions === div
+                      ? 'bg-amber-500 text-black'
+                      : 'bg-[#252836] text-gray-300 hover:bg-[#323648]'
+                  }`}
+                >
+                  {div === 3 ? '3T' : `${div}x`}
+                </button>
+              ))}
+              <span className="text-[10px] font-mono text-gray-500 ml-1">RAMP:</span>
+              {(['flat', 'up', 'down'] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setChopperRamp(r)}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                    chopperRamp === r
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-[#252836] text-gray-300 hover:bg-[#323648]'
+                  }`}
+                >
+                  {r === 'flat' ? 'Flat' : r === 'up' ? '↗' : '↘'}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Chord Stamper Dropdown */}
           {activeTool === 'chord' && (

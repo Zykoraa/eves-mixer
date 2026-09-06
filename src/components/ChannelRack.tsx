@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Volume2,
   Plus,
@@ -11,6 +11,11 @@ import {
   Play,
   Compass,
   RotateCcw,
+  Zap,
+  ArrowUpRight,
+  ArrowDownRight,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { ChannelTrack } from '../types/daw';
@@ -20,6 +25,13 @@ export const ChannelRack: React.FC = () => {
   const [state, store] = useDawStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetSampleTrackId = useRef<string | null>(null);
+
+  const [ratchetMenu, setRatchetMenu] = useState<{
+    trackId: string;
+    stepIdx: number;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const currentPattern = state.patterns.find((p) => p.id === state.selectedPatternId) || state.patterns[0];
   const stepCount = currentPattern?.lengthSteps || 16;
@@ -187,6 +199,33 @@ export const ChannelRack: React.FC = () => {
             <Sparkles size={12} />
             Phonk
           </button>
+
+          {/* Quick Trap/Drill Ratchet Roll Chopper */}
+          <div className="flex items-center gap-1 bg-[#121316] px-2 py-0.5 rounded border border-amber-500/30">
+            <Zap size={12} className="text-amber-400" />
+            <span className="text-[10px] font-mono text-amber-400 font-bold">ROLLS:</span>
+            <button
+              onClick={() => {
+                const hihat = state.tracks.find((t) => t.soundId === 'hihat_closed') || state.tracks[0];
+                store.applyHiHatRoll(hihat.id, 'trap');
+              }}
+              className="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 transition-all"
+              title="Apply Trap Hi-Hat Ratchet Roll"
+            >
+              Trap 8x
+            </button>
+            <button
+              onClick={() => {
+                const hihat = state.tracks.find((t) => t.soundId === 'hihat_closed') || state.tracks[0];
+                store.applyHiHatRoll(hihat.id, 'drill');
+              }}
+              className="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 transition-all"
+              title="Apply UK/NY Drill Triplet Ratchet Roll"
+            >
+              Drill 3T
+            </button>
+          </div>
+
           <button
             onClick={() => store.resetToProDemo()}
             title="Reload high-quality default pro trap beat"
@@ -317,6 +356,7 @@ export const ChannelRack: React.FC = () => {
                   const step = trackSteps[stepIdx];
                   const isActive = step?.active ?? false;
                   const isCurrent = state.isPlaying && state.currentStep === stepIdx;
+                  const hasRatchet = step?.ratchetCount && step.ratchetCount > 1;
 
                   // 4-step alternating background color (FL Studio design)
                   const isAltGroup = Math.floor(stepIdx / 4) % 2 === 1;
@@ -325,7 +365,21 @@ export const ChannelRack: React.FC = () => {
                     <button
                       key={stepIdx}
                       onClick={() => store.toggleStep(track.id, stepIdx)}
-                      className={`h-7 flex-1 min-w-[20px] rounded-xs border transition-all duration-75 relative flex items-center justify-center ${
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setRatchetMenu({
+                          trackId: track.id,
+                          stepIdx,
+                          x: Math.min(window.innerWidth - 260, e.clientX),
+                          y: Math.min(window.innerHeight - 300, e.clientY),
+                        });
+                      }}
+                      title={
+                        hasRatchet
+                          ? `Step ${stepIdx + 1}: ${step.ratchetCount}x Roll (${step.velocityRamp || 'flat'}, ${step.pitchRamp || 0}st). Right-click to edit`
+                          : `Step ${stepIdx + 1} (Right-click for Ratchet Roll)`
+                      }
+                      className={`h-7 flex-1 min-w-[20px] rounded-xs border transition-all duration-75 relative flex items-center justify-center overflow-hidden ${
                         isCurrent
                           ? 'ring-2 ring-white z-10 scale-105'
                           : ''
@@ -337,9 +391,26 @@ export const ChannelRack: React.FC = () => {
                           : 'bg-[#222530] border-[#313645] hover:bg-[#2d3140]'
                       }`}
                     >
-                      {isActive && (
+                      {/* Sub-step split lines for ratchets */}
+                      {isActive && hasRatchet && (
+                        <div className="absolute inset-0 flex pointer-events-none opacity-40">
+                          {Array.from({ length: step.ratchetCount! - 1 }).map((_, rIdx) => (
+                            <div key={rIdx} className="flex-1 border-r border-white/80" />
+                          ))}
+                        </div>
+                      )}
+
+                      {isActive && !hasRatchet && (
                         <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm shadow-white" />
                       )}
+
+                      {/* Ratchet badge indicator */}
+                      {isActive && hasRatchet && (
+                        <span className="text-[8px] font-mono font-extrabold text-amber-200 z-10 tracking-tighter">
+                          {step.ratchetCount}x{step.velocityRamp === 'up' ? '↗' : step.velocityRamp === 'down' ? '↘' : ''}
+                        </span>
+                      )}
+
                       {stepIdx % 4 === 0 && !isActive && (
                         <div className="w-1 h-1 rounded-full bg-gray-500 opacity-40" />
                       )}
@@ -425,9 +496,133 @@ export const ChannelRack: React.FC = () => {
         </div>
 
         <div className="text-[11px] text-gray-500 font-mono">
-          Tip: Click Sound Library to browse &amp; audition 40+ presets
+          Tip: Right-click any step to open Ratchet Sub-step Roll Chopper
         </div>
       </div>
+
+      {/* Step Ratchet / Roll Context Popover */}
+      {ratchetMenu && (
+        <div
+          className="fixed z-50 bg-[#191b24] border border-[#373b4d] rounded-xl shadow-2xl p-3 w-64 text-white font-mono"
+          style={{ top: ratchetMenu.y, left: ratchetMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-[#2b3040] pb-1.5 mb-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+              <Zap size={14} />
+              <span>STEP {ratchetMenu.stepIdx + 1} RATCHET</span>
+            </div>
+            <button
+              onClick={() => setRatchetMenu(null)}
+              className="text-gray-400 hover:text-white p-0.5 rounded"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* Subdivisions */}
+          <div className="mb-2">
+            <span className="text-[10px] text-gray-400 block mb-1 font-bold">SUB-STEP DIVISION:</span>
+            <div className="grid grid-cols-5 gap-1 text-center">
+              {([1, 2, 3, 4, 8] as const).map((r) => {
+                const trk = state.tracks.find((t) => t.id === ratchetMenu.trackId);
+                const st = trk?.steps[state.selectedPatternId]?.[ratchetMenu.stepIdx];
+                const active = (st?.ratchetCount || 1) === r;
+
+                return (
+                  <button
+                    key={r}
+                    onClick={() => {
+                      store.setStepRatchet(
+                        ratchetMenu.trackId,
+                        ratchetMenu.stepIdx,
+                        r,
+                        st?.velocityRamp || 'flat',
+                        st?.pitchRamp || 0
+                      );
+                    }}
+                    className={`py-1 rounded text-xs font-bold border transition-all ${
+                      active
+                        ? 'bg-amber-500 text-black border-amber-400'
+                        : 'bg-[#222634] text-gray-300 border-[#323646] hover:bg-[#2b3042]'
+                    }`}
+                  >
+                    {r === 1 ? '1x' : r === 3 ? '3T' : `${r}x`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Velocity Ramp */}
+          <div className="mb-2">
+            <span className="text-[10px] text-gray-400 block mb-1 font-bold">VELOCITY RAMP:</span>
+            <div className="grid grid-cols-3 gap-1 text-center">
+              {(['flat', 'up', 'down'] as const).map((ramp) => {
+                const trk = state.tracks.find((t) => t.id === ratchetMenu.trackId);
+                const st = trk?.steps[state.selectedPatternId]?.[ratchetMenu.stepIdx];
+                const active = (st?.velocityRamp || 'flat') === ramp;
+
+                return (
+                  <button
+                    key={ramp}
+                    onClick={() => {
+                      store.setStepRatchet(
+                        ratchetMenu.trackId,
+                        ratchetMenu.stepIdx,
+                        st?.ratchetCount || 2,
+                        ramp,
+                        st?.pitchRamp || 0
+                      );
+                    }}
+                    className={`py-1 rounded text-[10px] font-bold border transition-all ${
+                      active
+                        ? 'bg-orange-500 text-white border-orange-400'
+                        : 'bg-[#222634] text-gray-300 border-[#323646] hover:bg-[#2b3042]'
+                    }`}
+                  >
+                    {ramp === 'flat' ? 'Flat' : ramp === 'up' ? 'Up ↗' : 'Down ↘'}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Pitch Slide */}
+          <div>
+            <span className="text-[10px] text-gray-400 block mb-1 font-bold">PITCH SLIDE (SEMITONES):</span>
+            <div className="grid grid-cols-5 gap-1 text-center">
+              {([-5, -3, 0, 2, 5] as const).map((p) => {
+                const trk = state.tracks.find((t) => t.id === ratchetMenu.trackId);
+                const st = trk?.steps[state.selectedPatternId]?.[ratchetMenu.stepIdx];
+                const active = (st?.pitchRamp || 0) === p;
+
+                return (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      store.setStepRatchet(
+                        ratchetMenu.trackId,
+                        ratchetMenu.stepIdx,
+                        st?.ratchetCount || 2,
+                        st?.velocityRamp || 'flat',
+                        p
+                      );
+                    }}
+                    className={`py-1 rounded text-[10px] font-bold border transition-all ${
+                      active
+                        ? 'bg-purple-500 text-white border-purple-400'
+                        : 'bg-[#222634] text-gray-300 border-[#323646] hover:bg-[#2b3042]'
+                    }`}
+                  >
+                    {p === 0 ? '0' : p > 0 ? `+${p}` : `${p}`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

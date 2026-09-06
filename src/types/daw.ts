@@ -46,6 +46,9 @@ export interface StepData {
   active: boolean;
   velocity: number; // 0.0 to 1.0
   pitchOffset?: number; // semitones (-12 to +12)
+  ratchetCount?: 1 | 2 | 3 | 4 | 8; // sub-step subdivision
+  velocityRamp?: 'up' | 'down' | 'flat'; // volume ramp across ratchet
+  pitchRamp?: number; // semitone slide over the ratchet
 }
 
 export interface PianoNote {
@@ -111,6 +114,8 @@ export interface PlaylistTrack {
   volume: number; // 0 to 1
   pan: number; // -1 to 1
   isAutomationTrack?: boolean;
+  isArmed?: boolean;
+  inputSource?: 'mic' | 'guitar' | 'master';
 }
 
 export interface LooperDeck {
@@ -246,7 +251,9 @@ export type ViewTab =
   | 'vstPatchbay'
   | 'slicex'
   | 'mixingDoctor'
-  | 'midiLearn';
+  | 'midiLearn'
+  | 'newTone'
+  | 'stemSeparator';
 
 export type MusicalScale = 
   | 'chromatic'
@@ -385,4 +392,54 @@ export interface ImpulseResponseMeta {
   category: 'cabinet' | 'space';
   description: string;
   sampleRate: number;
+}
+
+// =========================================================================
+// 7. VOCAL PITCH CORRECTION (NEWTONE / MELODYNE)
+// =========================================================================
+export interface PitchNoteSegment {
+  id: string;
+  startIndex: number;
+  endIndex: number;
+  startTime: number;
+  duration: number;
+  detectedMidi: number;
+  targetMidi: number;
+  centDeviation: number;
+  trajectory: number[];
+  volume: number;
+}
+
+export interface PitchCorrectionSession {
+  audioBuffer: AudioBuffer | null;
+  fileName: string;
+  segments: PitchNoteSegment[];
+  selectedSegmentId: string | null;
+  correctionAmount: number; // 0 to 100%
+  fineTuneCents: number; // -50 to +50
+  formantShift: number; // -12 to +12
+}
+
+// =========================================================================
+// 8. IN-BROWSER AI STEM SEPARATION
+// =========================================================================
+export interface StemSeparationResult {
+  vocals: AudioBuffer | null;
+  drums: AudioBuffer | null;
+  bass: AudioBuffer | null;
+  other: AudioBuffer | null;
+  fileName: string;
+  duration: number;
+}
+
+// =========================================================================
+// 9. INDEXEDDB PROJECT PERSISTENCE
+// =========================================================================
+export interface StoredProjectMeta {
+  id: string;
+  name: string;
+  bpm: number;
+  updatedAt: number;
+  trackCount: number;
+  durationBars: number;
 }

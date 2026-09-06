@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Layers,
   Plus,
@@ -8,10 +8,13 @@ import {
   Play,
   Scissors,
   TrendingUp,
+  Circle,
+  Radio,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { PlaylistClip, AutomationTargetType } from '../types/daw';
 import { AutomationCurveClip } from './AutomationCurveClip';
+import { PlaylistRecorder } from '../audio/PlaylistRecorder';
 
 const AUTOMATION_TARGET_PRESETS: { type: AutomationTargetType; channelIndex?: number; label: string; color: string }[] = [
   { type: 'synthCutoff', label: 'Eve Lead Cutoff', color: '#ec4899' },
@@ -29,6 +32,17 @@ export const Playlist: React.FC = () => {
   const [clipLengthBars, setClipLengthBars] = useState<number>(4);
 
   const totalBars = 32;
+  const [livePeaks, setLivePeaks] = useState<number[]>([]);
+
+  useEffect(() => {
+    const recorder = PlaylistRecorder.getInstance();
+    const unsub = recorder.addWaveformListener((peaks) => {
+      setLivePeaks(peaks);
+    });
+    return () => {
+      unsub();
+    };
+  }, []);
 
   // Handle placing a clip on track row and bar
   const handleCellClick = (trackIndex: number, barIndex: number) => {
@@ -192,7 +206,23 @@ export const Playlist: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
+        <div className="flex items-center gap-3 text-xs font-mono text-gray-400">
+          {/* Direct Audio Recording Arm Button */}
+          <button
+            onClick={() => store.toggleRecordArm()}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-bold rounded transition-all ${
+              state.isRecording
+                ? 'bg-red-600 text-white animate-pulse shadow-lg shadow-red-600/50'
+                : state.isRecordArmed
+                ? 'bg-red-600/30 text-red-300 border border-red-500/60'
+                : 'bg-[#232631] text-gray-400 hover:text-red-400 border border-transparent'
+            }`}
+            title="Arm Recording into Playlist Track (Play to record)"
+          >
+            <Circle size={10} fill={state.isRecordArmed || state.isRecording ? 'currentColor' : 'none'} />
+            <span>{state.isRecording ? 'RECORDING...' : state.isRecordArmed ? 'ARMED' : 'ARM REC'}</span>
+          </button>
+
           <span>Click track to Paint / Remove clip</span>
           <button
             onClick={() => {
@@ -228,6 +258,23 @@ export const Playlist: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      state.playlistTracks.forEach((t, i) => {
+                        t.isArmed = i === trackIdx ? !t.isArmed : false;
+                      });
+                      store.syncAudioEngineData();
+                    }}
+                    title={track.isArmed ? 'Track Armed for Direct Recording' : 'Arm Track for Recording'}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold flex items-center gap-0.5 transition-all ${
+                      track.isArmed
+                        ? 'bg-red-600 text-white shadow-md shadow-red-600/50 animate-pulse'
+                        : 'bg-[#2b2e3c] text-gray-400 hover:text-red-400'
+                    }`}
+                  >
+                    <span>REC</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       track.mute = !track.mute;
@@ -281,6 +328,31 @@ export const Playlist: React.FC = () => {
                   key={trackIdx}
                   className="h-14 border-b border-[#20222d] flex relative bg-[#13141c]"
                 >
+                  {/* Live Streaming Recording Waveform Block */}
+                  {state.playlistTracks[trackIdx]?.isArmed && state.isRecording && (
+                    <div
+                      className="absolute top-1 bottom-1 rounded-sm border-2 border-red-500 bg-red-950/80 z-30 flex items-center px-2 shadow-lg shadow-red-500/40 overflow-hidden"
+                      style={{
+                        left: '0px',
+                        width: `${Math.max(60, (state.currentBar + 1) * 80)}px`,
+                      }}
+                    >
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-red-300 whitespace-nowrap">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                        <span>REC...</span>
+                      </div>
+                      <div className="flex-1 flex items-center gap-0.5 h-6 ml-3 overflow-hidden">
+                        {livePeaks.slice(-25).map((pk, pIdx) => (
+                          <div
+                            key={pIdx}
+                            className="w-1 bg-red-400 rounded-xs transition-all"
+                            style={{ height: `${Math.max(15, pk * 100)}%` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Empty Grid Cells */}
                   {Array.from({ length: totalBars }, (_, bar) => (
                     <div

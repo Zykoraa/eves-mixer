@@ -46,6 +46,9 @@ interface SearchModalProps {
   onOpenExport?: () => void;
   onOpenInspiration?: () => void;
   onOpenShortcuts?: () => void;
+  onOpenGrossBeat?: () => void;
+  onOpenStemSeparator?: () => void;
+  onOpenProjectLibrary?: () => void;
 }
 
 export const SearchModal: React.FC<SearchModalProps> = ({
@@ -54,6 +57,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   onOpenExport,
   onOpenInspiration,
   onOpenShortcuts,
+  onOpenGrossBeat,
+  onOpenStemSeparator,
+  onOpenProjectLibrary,
 }) => {
   const [state, store] = useDawStore();
   const [query, setQuery] = useState('');
@@ -300,6 +306,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       { id: 'browser', name: 'Sound Browser', desc: 'Library of 40+ modeled instruments and soundbanks', shortcut: '8' },
       { id: 'guitarRig', name: 'Eve Guitar Rig Pro', desc: 'Amp heads, speaker cab IRs, pedalboard and tuner', shortcut: '9' },
       { id: 'vstPatchbay', name: 'VST Host & Plugin Patchbay', desc: 'Mixer insert slots and Web Audio Modules', shortcut: '0' },
+      { id: 'newTone', name: 'Eve NewTone Vocal Pitch Editor', desc: 'Graphical pitch correction, formant shifts, scale-snapping & audio resynthesis', shortcut: 'N' },
       { id: 'slicex', name: 'Eve Slicex Beat Slicer', desc: 'AI transient beat slicer, chopper, and MPC pad dump', shortcut: 'S' },
       { id: 'mixingDoctor', name: 'AI Mixing Doctor', desc: 'Real-time multi-channel spectral collision analyzer and 1-click fixes', shortcut: 'D' },
       { id: 'midiLearn', name: 'Hardware MIDI Learn', desc: 'Map physical MIDI CC knobs, faders, and controllers', shortcut: 'M' },
@@ -323,6 +330,57 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     });
 
     // 7. DAW Actions & Utilities
+    if (onOpenGrossBeat) {
+      items.push({
+        id: 'act-gross-beat',
+        title: 'Open Eve Gross Beat FX',
+        subtitle: 'Time glitch, half-speed, reverse, vinyl stop, and turntable scratching unit',
+        category: 'action',
+        badge: 'TIME FX',
+        badgeColor: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+        icon: <Activity size={16} className="text-orange-400" />,
+        tags: ['gross beat', 'half speed', 'glitch', 'reverse', 'vinyl', 'scratch', 'time'],
+        onSelect: () => {
+          onClose();
+          onOpenGrossBeat();
+        },
+      });
+    }
+
+    if (onOpenStemSeparator) {
+      items.push({
+        id: 'act-stem-separator',
+        title: 'Open AI Stem Separator',
+        subtitle: 'Split any song or audio into isolated Vocals, Drums, Bass, and Instruments',
+        category: 'action',
+        badge: 'AI STEMS',
+        badgeColor: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+        icon: <Layers size={16} className="text-indigo-400" />,
+        tags: ['stem', 'separator', 'ai', 'vocals', 'drums', 'bass', 'split', 'isolate'],
+        onSelect: () => {
+          onClose();
+          onOpenStemSeparator();
+        },
+      });
+    }
+
+    if (onOpenProjectLibrary) {
+      items.push({
+        id: 'act-project-library',
+        title: 'Open Project Library (IndexedDB)',
+        subtitle: 'Manage local offline projects and high-fidelity audio recordings without limits',
+        category: 'action',
+        badge: 'STORAGE',
+        badgeColor: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+        icon: <Sliders size={16} className="text-cyan-400" />,
+        tags: ['library', 'storage', 'projects', 'save', 'indexeddb', 'load'],
+        onSelect: () => {
+          onClose();
+          onOpenProjectLibrary();
+        },
+      });
+    }
+
     items.push({
       id: 'act-export-stems',
       title: 'Export Multi-Track Stems (.ZIP)',

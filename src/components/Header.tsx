@@ -23,16 +23,23 @@ import {
   Search,
   Scissors,
   Stethoscope,
+  Circle,
+  Zap,
+  HardDrive,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { NOTE_NAMES, SCALE_INTERVALS } from '../audio/Presets';
 import { RootNote, MusicalScale, ViewTab } from '../types/daw';
+import { MidiExporter } from '../audio/MidiExporter';
 
 interface HeaderProps {
   onOpenInspiration: () => void;
   onOpenExport: () => void;
   onOpenShortcuts: () => void;
   onOpenSearch: () => void;
+  onOpenGrossBeat: () => void;
+  onOpenStemSeparator: () => void;
+  onOpenProjectLibrary: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +47,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenExport,
   onOpenShortcuts,
   onOpenSearch,
+  onOpenGrossBeat,
+  onOpenStemSeparator,
+  onOpenProjectLibrary,
 }) => {
   const [state, store] = useDawStore();
   const [tapTimes, setTapTimes] = useState<number[]>([]);
@@ -109,8 +119,9 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'pianoRoll', label: 'Piano Roll', icon: <Music size={15} />, color: 'text-sky-400' },
     { id: 'playlist', label: 'Playlist', icon: <Layers size={15} />, color: 'text-purple-400' },
     { id: 'mixer', label: 'Mixer', icon: <Sliders size={15} />, color: 'text-emerald-400' },
+    { id: 'newTone', label: 'NewTone', icon: <Mic size={15} />, color: 'text-cyan-400' },
     { id: 'synth', label: 'EveSynth', icon: <Cpu size={15} />, color: 'text-pink-400' },
-    { id: 'looper', label: 'LoopStation', icon: <Mic size={15} />, color: 'text-yellow-400' },
+    { id: 'looper', label: 'LoopStation', icon: <Radio size={15} />, color: 'text-yellow-400' },
     { id: 'fxRack', label: 'FX Rack', icon: <Activity size={15} />, color: 'text-cyan-400' },
     { id: 'browser', label: 'Sounds', icon: <Compass size={15} />, color: 'text-amber-400' },
     { id: 'guitarRig', label: 'Guitar Rig', icon: <Guitar size={15} />, color: 'text-red-400' },
@@ -165,7 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Transport Buttons: Play, Stop, Metronome */}
+        {/* Transport Buttons: Play, Record, Stop, Metronome */}
         <div className="flex items-center gap-1 bg-[#121316] p-1 rounded-md border border-[#353945]">
           <button
             onClick={() => store.togglePlay()}
@@ -177,6 +188,27 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Play size={16} fill={state.isPlaying ? 'currentColor' : 'none'} />
+          </button>
+
+          {/* DAW Transport Record Button */}
+          <button
+            onClick={() => store.toggleRecordArm()}
+            title={
+              state.isRecording
+                ? 'Recording active (Click to stop)'
+                : state.isRecordArmed
+                ? 'Record armed (Play to record)'
+                : 'Arm Recording'
+            }
+            className={`w-8 h-8 rounded flex items-center justify-center transition-all ${
+              state.isRecording
+                ? 'bg-red-600 text-white shadow-lg shadow-red-600/50 animate-pulse ring-2 ring-red-400'
+                : state.isRecordArmed
+                ? 'bg-red-600/30 text-red-400 border border-red-500'
+                : 'hover:bg-[#272a33] text-gray-400 hover:text-red-400'
+            }`}
+          >
+            <Circle size={14} fill={state.isRecording || state.isRecordArmed ? 'currentColor' : 'none'} />
           </button>
 
           <button
@@ -312,6 +344,46 @@ export const Header: React.FC<HeaderProps> = ({
           <kbd className="hidden sm:inline px-1 py-0.2 rounded bg-[#252838] text-[9px] font-bold text-gray-400 border border-[#383d54]">
             Ctrl+K
           </kbd>
+        </button>
+
+        {/* Eve Gross Beat Quick Access */}
+        <button
+          onClick={onOpenGrossBeat}
+          title="Eve Gross Beat (Time-Glitch FX Unit)"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+        >
+          <Zap size={14} />
+          <span className="hidden lg:inline">Gross Beat</span>
+        </button>
+
+        {/* AI Stem Separator Quick Access */}
+        <button
+          onClick={onOpenStemSeparator}
+          title="AI 4-Stem Audio Separator"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+        >
+          <Layers size={14} />
+          <span className="hidden lg:inline">Stems</span>
+        </button>
+
+        {/* IndexedDB Project Library */}
+        <button
+          onClick={onOpenProjectLibrary}
+          title="Project Library (IndexedDB Storage)"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+        >
+          <HardDrive size={14} />
+          <span className="hidden lg:inline">Library</span>
+        </button>
+
+        {/* Standard Multi-Track MIDI Export */}
+        <button
+          onClick={() => MidiExporter.downloadMidi(state.projectName, state.bpm, state.tracks, state.patterns)}
+          title="Export Standard Multi-Track MIDI (.MID)"
+          className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-[#222533] hover:bg-[#2d3144] border border-[#393e54] text-sky-300 hover:text-white text-xs font-mono font-bold transition-all shadow-xs"
+        >
+          <Music size={13} />
+          <span className="hidden lg:inline">.MID</span>
         </button>
 
         {/* Inspiration Generator Button */}

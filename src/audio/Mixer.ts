@@ -1,5 +1,6 @@
 import { EffectsChain } from './EffectsChain';
 import { FxSettings } from '../types/daw';
+import { GrossBeatEngine } from './GrossBeatEngine';
 
 export class MixerChannelNode {
   public index: number;
@@ -103,7 +104,16 @@ export class Mixer {
 
     // Master Channel (Index 0)
     this.masterChannel = new MixerChannelNode(ctx, 0);
-    this.masterChannel.analyserNode.connect(this.masterSoftClipper);
+
+    // Wire Gross Beat into Master Channel output
+    const grossBeat = GrossBeatEngine.getInstance();
+    grossBeat.init(ctx);
+    if (grossBeat.inputNode && grossBeat.outputNode) {
+      this.masterChannel.analyserNode.connect(grossBeat.inputNode);
+      grossBeat.outputNode.connect(this.masterSoftClipper);
+    } else {
+      this.masterChannel.analyserNode.connect(this.masterSoftClipper);
+    }
 
     // 8 Insert Channels (Index 1 to 8)
     for (let i = 1; i <= 8; i++) {

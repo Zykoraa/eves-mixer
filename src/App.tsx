@@ -19,6 +19,10 @@ import { SearchModal } from './components/SearchModal';
 import { SlicexView } from './components/SlicexView';
 import { MixingDoctorView } from './components/MixingDoctorView';
 import { MidiLearnModal } from './components/MidiLearnModal';
+import { NewToneEditorView } from './components/NewToneEditorView';
+import { GrossBeatModal } from './components/GrossBeatModal';
+import { StemSeparatorModal } from './components/StemSeparatorModal';
+import { ProjectLibraryModal } from './components/ProjectLibraryModal';
 import { useDawStore } from './store/useDawStore';
 
 export const App: React.FC = () => {
@@ -27,6 +31,9 @@ export const App: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isGrossBeatOpen, setIsGrossBeatOpen] = useState(false);
+  const [isStemSeparatorOpen, setIsStemSeparatorOpen] = useState(false);
+  const [isProjectLibraryOpen, setIsProjectLibraryOpen] = useState(false);
 
   // Global search shortcut (Ctrl+K or Cmd+K or /)
   React.useEffect(() => {
@@ -56,6 +63,9 @@ export const App: React.FC = () => {
         onOpenExport={() => setIsExportOpen(true)}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
         onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenGrossBeat={() => setIsGrossBeatOpen(true)}
+        onOpenStemSeparator={() => setIsStemSeparatorOpen(true)}
+        onOpenProjectLibrary={() => setIsProjectLibraryOpen(true)}
       />
 
       {/* Main Studio Viewport */}
@@ -72,6 +82,7 @@ export const App: React.FC = () => {
         {state.activeView === 'vstPatchbay' && <VstPatchbay />}
         {state.activeView === 'slicex' && <SlicexView />}
         {state.activeView === 'mixingDoctor' && <MixingDoctorView />}
+        {state.activeView === 'newTone' && <NewToneEditorView />}
       </main>
 
       <MidiLearnModal
@@ -96,6 +107,21 @@ export const App: React.FC = () => {
         onClose={() => setIsExportOpen(false)}
       />
 
+      <GrossBeatModal
+        isOpen={isGrossBeatOpen}
+        onClose={() => setIsGrossBeatOpen(false)}
+      />
+
+      <StemSeparatorModal
+        isOpen={isStemSeparatorOpen}
+        onClose={() => setIsStemSeparatorOpen(false)}
+      />
+
+      <ProjectLibraryModal
+        isOpen={isProjectLibraryOpen}
+        onClose={() => setIsProjectLibraryOpen(false)}
+      />
+
       <KeyboardShortcuts
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
@@ -107,6 +133,9 @@ export const App: React.FC = () => {
         onOpenExport={() => setIsExportOpen(true)}
         onOpenInspiration={() => setIsInspirationOpen(true)}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        onOpenGrossBeat={() => setIsGrossBeatOpen(true)}
+        onOpenStemSeparator={() => setIsStemSeparatorOpen(true)}
+        onOpenProjectLibrary={() => setIsProjectLibraryOpen(true)}
       />
     </div>
   );

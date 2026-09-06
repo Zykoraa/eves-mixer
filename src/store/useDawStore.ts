@@ -53,6 +53,8 @@ import { ConvolutionEngine, FACTORY_IMPULSES } from '../audio/ConvolutionEngine'
 import { MixingDoctor } from '../audio/MixingDoctor';
 import { MidiLearnManager, MidiLearnTarget } from '../audio/MidiLearnManager';
 import { OfflineRenderer } from '../audio/OfflineRenderer';
+import { PlaylistRecorder } from '../audio/PlaylistRecorder';
+import { ProjectStorage } from './projectStorage';
 
 // Default initial tracks
 const CURRENT_STORAGE_VERSION = 'v2_pro_producer';
@@ -492,6 +494,8 @@ export const DEFAULT_GUITAR_PEDALS: GuitarPedalSettings = {
 export interface DawStoreState {
   projectName: string;
   isPlaying: boolean;
+  isRecordArmed: boolean;
+  isRecording: boolean;
   bpm: number;
   swing: number;
   playbackMode: PlaybackMode;
@@ -602,6 +606,8 @@ class Store {
     this.state = {
       projectName: initialState.projectName || "Eve's Mixer Project",
       isPlaying: false,
+      isRecordArmed: false,
+      isRecording: false,
       bpm: initialState.bpm || 140,
       swing: initialState.swing || 0,
       playbackMode: initialState.playbackMode || 'pattern',
@@ -796,22 +802,78 @@ class Store {
 
   // --- Actions ---
 
-  public togglePlay() {
+  public async togglePlay() {
     if (this.state.isPlaying) {
+      this.stopRecordingIfActive();
       this.audioEngine.stop();
       this.state.isPlaying = false;
     } else {
       this.syncAudioEngineData();
       this.audioEngine.start();
       this.state.isPlaying = true;
+      if (this.state.isRecordArmed) {
+        await this.startRecordingIfArmed();
+      }
     }
     this.notify();
   }
 
   public stopPlayback() {
+    this.stopRecordingIfActive();
     this.audioEngine.stop();
     this.state.isPlaying = false;
     this.state.currentStep = 0;
+    this.notify();
+  }
+
+  public async toggleRecordArm() {
+    this.state.isRecordArmed = !this.state.isRecordArmed;
+    if (this.state.isPlaying) {
+      if (this.state.isRecordArmed) {
+        await this.startRecordingIfArmed();
+      } else {
+        this.stopRecordingIfActive();
+      }
+    }
+    this.notify();
+  }
+
+  public async startRecordingIfArmed() {
+    if (this.state.isRecording) return;
+    const armedTrackIdx = this.state.playlistTracks.findIndex((t) => t.isArmed);
+    const trackIndex = armedTrackIdx >= 0 ? armedTrackIdx : 0;
+
+    const recorder = PlaylistRecorder.getInstance();
+    recorder.init(this.audioEngine.ctx);
+    const ok = await recorder.startRecording(trackIndex, this.state.currentBar, this.state.bpm);
+    if (ok) {
+      this.state.isRecording = true;
+      this.notify();
+    }
+  }
+
+  public stopRecordingIfActive() {
+    if (!this.state.isRecording) return;
+    const recorder = PlaylistRecorder.getInstance();
+    const result = recorder.stopRecording();
+    this.state.isRecording = false;
+
+    if (result) {
+      this.audioEngine.cacheAudioBuffer(result.blobUrl, result.audioBuffer);
+      const newClip: PlaylistClip = {
+        id: `rec-audio-${Date.now()}`,
+        trackIndex: result.trackIndex,
+        name: `Audio Rec (Bar ${result.startBar + 1})`,
+        startBar: result.startBar,
+        lengthBars: result.durationBars,
+        color: '#ef4444',
+        type: 'audio',
+        audioBlobUrl: result.blobUrl,
+      };
+      this.state.clips.push(newClip);
+      this.syncAudioEngineData();
+      this.saveToStorage();
+    }
     this.notify();
   }
 
@@ -891,6 +953,78 @@ class Store {
       this.auditionTrack(track);
     }
 
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  // Step Sequencer Ratchet / Roll Configuration
+  public setStepRatchet(
+    trackId: string,
+    stepIndex: number,
+    ratchetCount: 1 | 2 | 3 | 4 | 8 = 1,
+    velocityRamp?: 'up' | 'down' | 'flat',
+    pitchRamp?: number
+  ) {
+    const track = this.state.tracks.find((t) => t.id === trackId);
+    if (!track) return;
+    const patId = this.state.selectedPatternId;
+    if (!track.steps[patId]) {
+      track.steps[patId] = Array.from({ length: 16 }, () => ({ active: false, velocity: 0.8 }));
+    }
+    const current = track.steps[patId][stepIndex];
+    if (current) {
+      current.active = true;
+      current.ratchetCount = ratchetCount;
+      current.velocityRamp = velocityRamp;
+      current.pitchRamp = pitchRamp;
+    } else {
+      track.steps[patId][stepIndex] = {
+        active: true,
+        velocity: 0.85,
+        ratchetCount,
+        velocityRamp,
+        pitchRamp,
+      };
+    }
+
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  // Auto-generate modern trap / drill hi-hat rolls with ratchets and pitch slides
+  public applyHiHatRoll(trackId: string, rollType: 'trap' | 'drill' | 'triplets' = 'trap') {
+    const track = this.state.tracks.find((t) => t.id === trackId);
+    if (!track) return;
+    const patId = this.state.selectedPatternId;
+    const pat = this.state.patterns.find((p) => p.id === patId);
+    const length = pat?.lengthSteps || 16;
+
+    const newSteps: StepData[] = Array.from({ length }, (_, i) => ({
+      active: true,
+      velocity: i % 2 === 0 ? 0.9 : 0.65,
+    }));
+
+    if (rollType === 'trap') {
+      if (length > 6) newSteps[6] = { active: true, velocity: 0.85, ratchetCount: 2, velocityRamp: 'up' };
+      if (length > 11) newSteps[11] = { active: true, velocity: 0.9, ratchetCount: 3, velocityRamp: 'down' };
+      if (length > 14) newSteps[14] = { active: true, velocity: 0.95, ratchetCount: 4, velocityRamp: 'up', pitchRamp: -3 };
+      if (length > 15) newSteps[15] = { active: true, velocity: 1.0, ratchetCount: 8, velocityRamp: 'down', pitchRamp: -5 };
+    } else if (rollType === 'drill') {
+      if (length > 2) newSteps[2] = { active: true, velocity: 0.85, ratchetCount: 3, velocityRamp: 'up', pitchRamp: 2 };
+      if (length > 7) newSteps[7] = { active: true, velocity: 0.9, ratchetCount: 4, velocityRamp: 'down', pitchRamp: -4 };
+      if (length > 10) newSteps[10] = { active: true, velocity: 0.85, ratchetCount: 3, velocityRamp: 'up' };
+      if (length > 14) newSteps[14] = { active: true, velocity: 1.0, ratchetCount: 8, velocityRamp: 'up', pitchRamp: -6 };
+    } else {
+      for (let i = 0; i < length; i += 4) {
+        if (i + 2 < length) {
+          newSteps[i + 2] = { active: true, velocity: 0.85, ratchetCount: 3, velocityRamp: 'flat' };
+        }
+      }
+    }
+
+    track.steps[patId] = newSteps;
     this.syncAudioEngineData();
     this.notify();
     this.saveToStorage();

@@ -120,6 +120,34 @@ export const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({ isOpen, on
                 <span className="text-gray-400">VST Host & Patchbay:</span>
                 <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">0</kbd>
               </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-cyan-400 font-bold">NewTone Pitch Editor:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Nav Bar</kbd>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-emerald-400 font-bold uppercase tracking-wider text-[11px]">
+              Advanced Pro Features
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-gray-400">Piano Roll Chopper:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Alt+U</kbd>
+              </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-gray-400">Step Ratchet / Rolls:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Right Click Step</kbd>
+              </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-gray-400">Arm Track Recording:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Playlist REC</kbd>
+              </div>
+              <div className="p-2 bg-[#12141c] rounded border border-[#262835] flex justify-between">
+                <span className="text-gray-400">Gross Beat Glitch:</span>
+                <kbd className="px-1.5 py-0.5 bg-[#252834] rounded text-white font-bold">Top Bar / Search</kbd>
+              </div>
             </div>
           </div>
 

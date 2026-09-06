@@ -9,9 +9,11 @@ import {
   Sparkles,
   Loader2,
   Sliders,
+  Music,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { OfflineRenderer } from '../audio/OfflineRenderer';
+import { MidiExporter } from '../audio/MidiExporter';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -20,7 +22,7 @@ interface ExportModalProps {
 
 export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
   const [state] = useDawStore();
-  const [exportMode, setExportMode] = useState<'master' | 'stems'>('stems');
+  const [exportMode, setExportMode] = useState<'master' | 'stems' | 'midi'>('stems');
   const [bitDepth, setBitDepth] = useState<16 | 32>(16);
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -32,10 +34,25 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
   const handleStartExport = async () => {
     setIsExporting(true);
     setProgress(5);
-    setStatusText('Preparing offline audio context...');
+    setStatusText('Preparing export...');
     setDownloadReady(null);
 
     try {
+      if (exportMode === 'midi') {
+        const midiBlob = MidiExporter.generateMidi(
+          state.projectName,
+          state.bpm,
+          state.tracks,
+          state.patterns
+        );
+        const filename = `${state.projectName.toLowerCase().replace(/[^a-z0-9]/g, '_')}.mid`;
+        setDownloadReady({ blob: midiBlob, filename });
+        setIsExporting(false);
+        setProgress(100);
+        setStatusText('Standard Multi-Track MIDI (.MID) ready!');
+        return;
+      }
+
       if (exportMode === 'stems') {
         const zipBlob = await OfflineRenderer.renderStemsToZip(
           state.projectName,
@@ -113,34 +130,48 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
         {/* Content */}
         <div className="p-5 space-y-4 text-gray-200">
           {/* Export Mode Switcher */}
-          <div className="grid grid-cols-2 gap-2 bg-[#12141c] p-1 rounded-lg border border-[#2b2e3e]">
+          <div className="grid grid-cols-3 gap-1.5 bg-[#12141c] p-1 rounded-lg border border-[#2b2e3e]">
             <button
               onClick={() => {
                 setExportMode('stems');
                 setDownloadReady(null);
               }}
-              className={`py-2 px-3 rounded-md text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all ${
+              className={`py-2 px-2 rounded-md text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all ${
                 exportMode === 'stems'
                   ? 'bg-purple-600 text-white shadow-md'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              <Archive size={14} />
-              <span>Multi-Track Stems (.ZIP)</span>
+              <Archive size={13} />
+              <span>Stems (.ZIP)</span>
             </button>
             <button
               onClick={() => {
                 setExportMode('master');
                 setDownloadReady(null);
               }}
-              className={`py-2 px-3 rounded-md text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all ${
+              className={`py-2 px-2 rounded-md text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all ${
                 exportMode === 'master'
                   ? 'bg-emerald-600 text-white shadow-md'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              <FileAudio size={14} />
-              <span>Full Master Mix (.WAV)</span>
+              <FileAudio size={13} />
+              <span>Master (.WAV)</span>
+            </button>
+            <button
+              onClick={() => {
+                setExportMode('midi');
+                setDownloadReady(null);
+              }}
+              className={`py-2 px-2 rounded-md text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all ${
+                exportMode === 'midi'
+                  ? 'bg-sky-600 text-white shadow-md'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Music size={13} />
+              <span>MIDI (.MID)</span>
             </button>
           </div>
 

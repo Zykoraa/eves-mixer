@@ -7,6 +7,7 @@ import { GuitarEngine } from './GuitarEngine';
 import { VstEngine } from './VstEngine';
 import { SidechainManager } from './SidechainManager';
 import { ConvolutionEngine } from './ConvolutionEngine';
+import { GrossBeatEngine } from './GrossBeatEngine';
 import {
   ChannelTrack,
   Pattern,
@@ -31,6 +32,8 @@ export class AudioEngine {
   public vstEngine: VstEngine;
   public sidechainManager: SidechainManager;
   public convolutionEngine: ConvolutionEngine;
+  public grossBeatEngine: GrossBeatEngine;
+  private audioBufferCache: Map<string, AudioBuffer> = new Map();
 
   // Automation
   private automationClips: AutomationClip[] = [];
@@ -93,6 +96,10 @@ export class AudioEngine {
 
     // Initialize Convolution Engine
     this.convolutionEngine = ConvolutionEngine.getInstance();
+
+    // Initialize Gross Beat Engine
+    this.grossBeatEngine = GrossBeatEngine.getInstance();
+    this.grossBeatEngine.init(this.ctx);
   }
 
   public static getInstance(): AudioEngine {
@@ -143,6 +150,7 @@ export class AudioEngine {
 
   public setBpm(bpm: number) {
     this.bpm = Math.max(40, Math.min(260, bpm));
+    this.grossBeatEngine.setBpm(this.bpm);
   }
 
   public setSwing(swing: number) {
@@ -164,6 +172,7 @@ export class AudioEngine {
     this.currentStep = 0;
     this.currentBar = 0;
     this.nextStepTime = this.ctx.currentTime + 0.05;
+    this.grossBeatEngine.setTransport(true, 0);
 
     this.timerId = window.setInterval(() => this.scheduler(), this.lookaheadMs);
   }
@@ -176,6 +185,7 @@ export class AudioEngine {
     }
     this.currentStep = 0;
     this.currentBar = 0;
+    this.grossBeatEngine.setTransport(false, 0);
     this.synthEngine.stopAllVoices();
     this.onStopListeners.forEach((cb) => cb());
   }
@@ -186,6 +196,7 @@ export class AudioEngine {
       clearInterval(this.timerId);
       this.timerId = null;
     }
+    this.grossBeatEngine.setTransport(false, 0);
     this.synthEngine.stopAllVoices();
   }
 
@@ -264,6 +275,9 @@ export class AudioEngine {
   }
 
   private schedulePatternStep(pattern: Pattern, step: number, time: number) {
+    // 16th note step duration in seconds
+    const stepDuration = 60.0 / this.bpm / 4.0;
+
     // 1. Channel rack drum/synth steps
     for (const track of this.currentTracks) {
       if (track.mute) continue;
@@ -274,43 +288,62 @@ export class AudioEngine {
         const mixerChan = this.mixer.getChannel(track.mixerChannelIndex);
         this.sidechainManager.triggerDucking(track.mixerChannelIndex, time);
 
-        if (track.type === 'drum' && track.soundId) {
-          this.drumSynth.trigger(
-            track.soundId,
-            time,
-            stepData.velocity * track.volume,
-            mixerChan.inputNode,
-            track.customAudioUrl,
-            track.drumKitId || 'trap',
-            stepData.pitchOffset || 0
-          );
-        } else if (track.type === 'instrument' && track.instrumentId) {
-          const basePitch = 60 + (stepData.pitchOffset || 0);
-          this.instrumentEngine.noteOn(
-            track.instrumentId,
-            basePitch,
-            stepData.velocity * track.volume,
-            time,
-            mixerChan.inputNode
-          );
-          const durSeconds = (60 / this.bpm / 4) * 0.95;
-          this.instrumentEngine.noteOff(track.instrumentId, basePitch, time + durSeconds);
-        } else if (track.type === 'sampler' && track.customAudioUrl) {
-          this.drumSynth.trigger(
-            'kick',
-            time,
-            stepData.velocity * track.volume,
-            mixerChan.inputNode,
-            track.customAudioUrl,
-            track.drumKitId || 'trap',
-            stepData.pitchOffset || 0
-          );
-        } else if (track.type === 'synth' && this.synthParams) {
-          // Play base note for step sequencer (e.g. C3 = 48)
-          const basePitch = 48 + (stepData.pitchOffset || 0);
-          this.synthEngine.noteOn(basePitch, stepData.velocity * track.volume, time, this.synthParams, mixerChan.inputNode);
-          const durSeconds = (60 / this.bpm / 4) * 0.95;
-          this.synthEngine.noteOff(basePitch, time + durSeconds, this.synthParams);
+        // Trap / Drill Ratchet Sub-steps (2x, 3x triplet, 4x, 8x roll)
+        const ratchet = stepData.ratchetCount && stepData.ratchetCount > 1 ? stepData.ratchetCount : 1;
+        const subStepDur = stepDuration / ratchet;
+
+        for (let r = 0; r < ratchet; r++) {
+          const subTime = time + r * subStepDur;
+          let subVel = stepData.velocity * track.volume;
+
+          if (ratchet > 1) {
+            if (stepData.velocityRamp === 'up') {
+              subVel = (stepData.velocity * (0.35 + 0.65 * (r / (ratchet - 1)))) * track.volume;
+            } else if (stepData.velocityRamp === 'down') {
+              subVel = (stepData.velocity * (1.0 - 0.65 * (r / (ratchet - 1)))) * track.volume;
+            }
+          }
+          const subPitch = (stepData.pitchOffset || 0) +
+            (ratchet > 1 && stepData.pitchRamp ? (stepData.pitchRamp * r) / (ratchet - 1) : 0);
+
+          if (track.type === 'drum' && track.soundId) {
+            this.drumSynth.trigger(
+              track.soundId,
+              subTime,
+              subVel,
+              mixerChan.inputNode,
+              track.customAudioUrl,
+              track.drumKitId || 'trap',
+              subPitch
+            );
+          } else if (track.type === 'instrument' && track.instrumentId) {
+            const basePitch = 60 + subPitch;
+            this.instrumentEngine.noteOn(
+              track.instrumentId,
+              basePitch,
+              subVel,
+              subTime,
+              mixerChan.inputNode
+            );
+            const durSeconds = subStepDur * 0.95;
+            this.instrumentEngine.noteOff(track.instrumentId, basePitch, subTime + durSeconds);
+          } else if (track.type === 'sampler' && track.customAudioUrl) {
+            this.drumSynth.trigger(
+              'kick',
+              subTime,
+              subVel,
+              mixerChan.inputNode,
+              track.customAudioUrl,
+              track.drumKitId || 'trap',
+              subPitch
+            );
+          } else if (track.type === 'synth' && this.synthParams) {
+            // Play base note for step sequencer (e.g. C3 = 48)
+            const basePitch = 48 + subPitch;
+            this.synthEngine.noteOn(basePitch, subVel, subTime, this.synthParams, mixerChan.inputNode);
+            const durSeconds = subStepDur * 0.95;
+            this.synthEngine.noteOff(basePitch, subTime + durSeconds, this.synthParams);
+          }
         }
       }
     }
@@ -353,8 +386,37 @@ export class AudioEngine {
             this.schedulePatternStep(pattern, stepInsideClip, time);
           }
         }
+      } else if (clip.type === 'audio' && clip.audioBlobUrl) {
+        const clipStartStep = Math.round(clip.startBar * 16);
+        if (stepIndex === clipStartStep) {
+          this.playAudioClip(clip, time);
+        }
       }
     }
+  }
+
+  public async playAudioClip(clip: PlaylistClip, time: number) {
+    if (!clip.audioBlobUrl) return;
+    try {
+      let buffer = this.audioBufferCache.get(clip.audioBlobUrl);
+      if (!buffer) {
+        const res = await fetch(clip.audioBlobUrl);
+        const arrayBuf = await res.arrayBuffer();
+        buffer = await this.ctx.decodeAudioData(arrayBuf);
+        this.audioBufferCache.set(clip.audioBlobUrl, buffer);
+      }
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      const trackChan = this.mixer.getChannel(Math.min(8, clip.trackIndex + 1));
+      source.connect(trackChan.inputNode);
+      source.start(time);
+    } catch (err) {
+      console.warn('Could not play audio clip:', err);
+    }
+  }
+
+  public cacheAudioBuffer(url: string, buffer: AudioBuffer) {
+    this.audioBufferCache.set(url, buffer);
   }
 
   private evaluateAutomation(currentBar: number, time: number) {

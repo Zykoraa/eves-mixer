@@ -22,22 +22,22 @@ const TAPE_PRESETS: { label: string; desc: string; params: Partial<TapeColorPara
   {
     label: 'Warm Cassette 1985',
     desc: 'Lush tape warmth with subtle wow/flutter and analog drive',
-    params: { wowFlutter: 30, flutterRate: 0.8, tapeDrive: 45, vinylNoise: 15, vinylTone: 40, dropouts: 15, spaceReverb: 10, mix: 80 },
+    params: { wowFlutter: 30, flutterRate: 0.8, tapeDrive: 45, vinylNoise: 0, vinylTone: 40, dropouts: 10, spaceReverb: 10, mix: 80 },
   },
   {
     label: 'Dusty Vinyl 33 RPM',
-    desc: 'Heavy surface dust crackle, needle noise, and warm tube saturation',
-    params: { wowFlutter: 15, flutterRate: 0.5, tapeDrive: 25, vinylNoise: 65, vinylTone: 55, dropouts: 5, spaceReverb: 0, mix: 90 },
+    desc: 'Subtle surface crackle, needle character, and warm tube saturation',
+    params: { wowFlutter: 15, flutterRate: 0.5, tapeDrive: 25, vinylNoise: 8, vinylTone: 55, dropouts: 5, spaceReverb: 0, mix: 80 },
   },
   {
     label: 'Melted VHS Tape',
     desc: 'Extreme tape wobble, degraded frequency loss, and tape dropouts',
-    params: { wowFlutter: 75, flutterRate: 2.2, tapeDrive: 55, vinylNoise: 30, vinylTone: 25, dropouts: 60, spaceReverb: 25, mix: 85 },
+    params: { wowFlutter: 75, flutterRate: 2.2, tapeDrive: 55, vinylNoise: 0, vinylTone: 25, dropouts: 40, spaceReverb: 25, mix: 85 },
   },
   {
     label: 'Lo-Fi Bedroom Chill',
-    desc: 'Gentle pitch instability, soft vinyl hiss, and cozy room ambience',
-    params: { wowFlutter: 45, flutterRate: 1.0, tapeDrive: 30, vinylNoise: 40, vinylTone: 45, dropouts: 20, spaceReverb: 30, mix: 75 },
+    desc: 'Gentle pitch instability, subtle analog tone, and cozy room ambience',
+    params: { wowFlutter: 45, flutterRate: 1.0, tapeDrive: 30, vinylNoise: 5, vinylTone: 45, dropouts: 10, spaceReverb: 30, mix: 75 },
   },
 ];
 

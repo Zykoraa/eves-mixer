@@ -43,17 +43,18 @@ export class TapeColorEngine {
   // Space
   private convolver: ConvolverNode | null = null;
   private spaceGain: GainNode | null = null;
+  private isPlaying = false;
 
   public params: TapeColorParameters = {
     enabled: false,
-    wowFlutter: 40,
-    flutterRate: 1.2,
-    tapeDrive: 35,
-    vinylNoise: 25,
+    wowFlutter: 30,
+    flutterRate: 1.0,
+    tapeDrive: 25,
+    vinylNoise: 0,
     vinylTone: 50,
-    dropouts: 20,
-    spaceReverb: 15,
-    mix: 75,
+    dropouts: 0,
+    spaceReverb: 10,
+    mix: 50,
   };
 
   private constructor() {}
@@ -209,7 +210,7 @@ export class TapeColorEngine {
     }
 
     this.dropoutInterval = window.setInterval(() => {
-      if (!this.params.enabled || !this.ctx || !this.dropoutGain || this.params.dropouts <= 0) return;
+      if (!this.isPlaying || !this.params.enabled || !this.ctx || !this.dropoutGain || this.params.dropouts <= 0) return;
       const prob = (this.params.dropouts / 100) * 0.35;
       if (Math.random() < prob) {
         const now = this.ctx.currentTime;
@@ -221,6 +222,15 @@ export class TapeColorEngine {
         this.dropoutGain.gain.linearRampToValueAtTime(1.0, now + dur);
       }
     }, 400);
+  }
+
+  public setTransport(isPlaying: boolean): void {
+    this.isPlaying = isPlaying;
+    if (!this.ctx || !this.vinylGain) return;
+    const now = this.ctx.currentTime;
+    const shouldPlay = isPlaying && this.params.enabled && this.params.vinylNoise > 0;
+    const noiseGain = shouldPlay ? (this.params.vinylNoise / 100) * 0.12 : 0;
+    this.vinylGain.gain.setValueAtTime(noiseGain, now);
   }
 
   public applyParameters(p: Partial<TapeColorParameters>): void {
@@ -238,7 +248,7 @@ export class TapeColorEngine {
 
     // Wow & flutter
     if (this.wowGain && this.flutterGain) {
-      const wowAmt = (this.params.wowFlutter / 100) * 0.003;
+      const wowAmt = isEnabled ? (this.params.wowFlutter / 100) * 0.003 : 0;
       this.wowGain.gain.setValueAtTime(wowAmt, now);
       this.flutterGain.gain.setValueAtTime(wowAmt * 0.4, now);
       if (this.flutterOsc) {
@@ -247,19 +257,21 @@ export class TapeColorEngine {
     }
 
     // Drive
-    this.updateSaturationCurve(this.params.tapeDrive);
+    this.updateSaturationCurve(isEnabled ? this.params.tapeDrive : 0);
 
-    // Vinyl Noise
+    // Vinyl Noise - strictly silent when stopped or disabled
     if (this.vinylGain && this.vinylFilter) {
-      const noiseGain = (this.params.vinylNoise / 100) * 0.18;
-      this.vinylGain.gain.setValueAtTime(isEnabled ? noiseGain : 0, now);
+      const shouldPlay = isEnabled && this.isPlaying && this.params.vinylNoise > 0;
+      const noiseGain = shouldPlay ? (this.params.vinylNoise / 100) * 0.12 : 0;
+      this.vinylGain.gain.setValueAtTime(noiseGain, now);
       const toneFreq = 400 + (this.params.vinylTone / 100) * 4500;
       this.vinylFilter.frequency.setValueAtTime(toneFreq, now);
     }
 
     // Space
     if (this.spaceGain) {
-      this.spaceGain.gain.setValueAtTime((this.params.spaceReverb / 100) * 0.6, now);
+      const spaceAmt = isEnabled ? (this.params.spaceReverb / 100) * 0.6 : 0;
+      this.spaceGain.gain.setValueAtTime(spaceAmt, now);
     }
   }
 

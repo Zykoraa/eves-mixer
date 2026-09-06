@@ -8,6 +8,7 @@ import { VstEngine } from './VstEngine';
 import { SidechainManager } from './SidechainManager';
 import { ConvolutionEngine } from './ConvolutionEngine';
 import { GrossBeatEngine } from './GrossBeatEngine';
+import { TapeColorEngine } from './TapeColorEngine';
 import {
   ChannelTrack,
   Pattern,
@@ -173,6 +174,7 @@ export class AudioEngine {
     this.currentBar = 0;
     this.nextStepTime = this.ctx.currentTime + 0.05;
     this.grossBeatEngine.setTransport(true, 0);
+    TapeColorEngine.getInstance().setTransport(true);
 
     this.timerId = window.setInterval(() => this.scheduler(), this.lookaheadMs);
   }
@@ -186,6 +188,7 @@ export class AudioEngine {
     this.currentStep = 0;
     this.currentBar = 0;
     this.grossBeatEngine.setTransport(false, 0);
+    TapeColorEngine.getInstance().setTransport(false);
     this.synthEngine.stopAllVoices();
     this.onStopListeners.forEach((cb) => cb());
   }
@@ -197,6 +200,7 @@ export class AudioEngine {
       this.timerId = null;
     }
     this.grossBeatEngine.setTransport(false, 0);
+    TapeColorEngine.getInstance().setTransport(false);
     this.synthEngine.stopAllVoices();
   }
 

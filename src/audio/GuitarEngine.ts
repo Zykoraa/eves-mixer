@@ -419,9 +419,9 @@ export class GuitarEngine {
     this.cabDryGain.connect(this.cabOutNode);
     this.cabWetGain.connect(this.cabOutNode);
 
-    // Final output node & direct monitor
+    // Final output node & direct monitor (muted by default until guitar input is active)
     this.outputNode = ctx.createGain();
-    this.outputNode.gain.setValueAtTime(1.0, ctx.currentTime);
+    this.outputNode.gain.setValueAtTime(0.0, ctx.currentTime);
 
     this.directMonitorGain = ctx.createGain();
     this.directMonitorGain.gain.setValueAtTime(0.0, ctx.currentTime); // Off by default to prevent feedback
@@ -559,6 +559,7 @@ export class GuitarEngine {
         this.sourceNode.connect(this.inputGainNode);
       }
 
+      this.outputNode.gain.setValueAtTime(1.0, this.ctx.currentTime);
       this.setupNoiseGateWatcher();
       return true;
     } catch (err) {
@@ -568,6 +569,7 @@ export class GuitarEngine {
   }
 
   public stopGuitarInput() {
+    this.outputNode.gain.setValueAtTime(0.0, this.ctx.currentTime);
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach((t) => t.stop());
       this.mediaStream = null;

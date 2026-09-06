@@ -728,17 +728,17 @@ class Store {
         limiterReleaseMs: 50,
       },
 
-      // 8. Vintage Tape Color
+      // 8. Vintage Tape Color (clean, zero background noise by default)
       tapeColorParams: initialState.tapeColorParams || {
         enabled: false,
-        wowFlutter: 40,
-        flutterRate: 1.2,
-        tapeDrive: 35,
-        vinylNoise: 25,
+        wowFlutter: 30,
+        flutterRate: 1.0,
+        tapeDrive: 25,
+        vinylNoise: 0,
         vinylTone: 50,
-        dropouts: 20,
-        spaceReverb: 15,
-        mix: 75,
+        dropouts: 0,
+        spaceReverb: 10,
+        mix: 50,
       },
     };
 
@@ -1645,17 +1645,17 @@ class Store {
     };
     MasteringSuite.getInstance().applyParameters(this.state.masteringParams);
 
-    // Vintage tape warmth
+    // Vintage tape warmth (zero noise to eliminate any background buzz or hiss)
     this.state.tapeColorParams = {
-      enabled: true,
+      enabled: false,
       wowFlutter: 15,
       flutterRate: 0.9,
-      tapeDrive: 22,
-      vinylNoise: 12,
+      tapeDrive: 20,
+      vinylNoise: 0,
       vinylTone: 55,
       dropouts: 0,
-      spaceReverb: 15,
-      mix: 35,
+      spaceReverb: 10,
+      mix: 30,
     };
     TapeColorEngine.getInstance().applyParameters(this.state.tapeColorParams);
 

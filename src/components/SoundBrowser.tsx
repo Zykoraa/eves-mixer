@@ -28,12 +28,14 @@ const CATEGORY_TABS: { id: InstrumentCategory | 'all'; label: string; icon: stri
   { id: 'fx', label: 'SFX & Risers', icon: '💥' },
 ];
 
-const DRUM_KITS: { id: DrumKitId; name: string; desc: string; color: string }[] = [
-  { id: 'trap', name: '808 Trap Heat', desc: 'Hard hitting kick, rolling hats, booming 808 sub', color: '#ff763b' },
-  { id: 'synthwave', name: '80s Synthwave', desc: 'Gated snare reverb, LinnDrum kick, synth toms', color: '#ec4899' },
-  { id: 'lofi', name: 'Dusty Lo-Fi', desc: 'Warm vinyl kick, paper snare, loose hats', color: '#a855f7' },
+const DRUM_KITS: { id: DrumKitId; name: string; desc: string; color: string; badge?: string }[] = [
+  { id: 'trap', name: 'TR-808 Modern Trap', desc: 'Real studio samples: punch kick, booming 808 sub, snappy snare & bronze hats', color: '#ff763b', badge: 'STUDIO' },
+  { id: 'tr808', name: 'Classic Roland TR-808', desc: 'Original analog TR-808 tape-recorded one-shots', color: '#ef4444', badge: 'ANALOG' },
+  { id: 'linndrum', name: 'Linn LM-2 Drum Machine', desc: 'Authentic 1980s punchy hybrid acoustic-electronic tape kit', color: '#ec4899', badge: 'STUDIO' },
+  { id: 'lofi', name: 'Casio RZ-1 Vintage Lo-Fi', desc: 'Dusty 12-bit vintage sampler character and round boom bap pocket', color: '#a855f7', badge: '12-BIT' },
+  { id: 'synthwave', name: '80s Synthwave Hybrid', desc: 'Gated snare reverb, LinnDrum kick, synth toms', color: '#f43f5e' },
   { id: 'house', name: '909 Club House', desc: 'Punchy 4/4 dance kick, 909 clap, sizzle open hat', color: '#38bdf8' },
-  { id: 'acoustic', name: 'Live Studio', desc: 'Wood birch kick, brass snare wires, natural cymbals', color: '#22c55e' },
+  { id: 'acoustic', name: 'Live Studio Birch', desc: 'Wood birch kick, brass snare wires, natural cymbals', color: '#22c55e' },
   { id: 'glitch', name: 'Cyberpunk Glitch', desc: 'Bitcrushed kicks, metallic laser snares, blip hats', color: '#eab308' },
 ];
 
@@ -119,6 +121,13 @@ export const SoundBrowser: React.FC = () => {
               title={kit.desc}
             >
               <span>{kit.name}</span>
+              {kit.badge && (
+                <span className={`text-[9px] px-1 py-0.2 rounded font-extrabold ${
+                  selectedKit === kit.id ? 'bg-black/30 text-white' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                }`}>
+                  {kit.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>

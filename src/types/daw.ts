@@ -1,6 +1,14 @@
 export type TrackType = 'drum' | 'synth' | 'instrument' | 'sampler';
 
-export type DrumKitId = 'trap' | 'synthwave' | 'lofi' | 'house' | 'acoustic' | 'glitch';
+export type DrumKitId =
+  | 'trap'
+  | 'tr808'
+  | 'linndrum'
+  | 'lofi'
+  | 'synthwave'
+  | 'house'
+  | 'acoustic'
+  | 'glitch';
 
 export type InstrumentCategory =
   | 'keys'
@@ -117,6 +125,9 @@ export interface LooperDeck {
   reverse: boolean;
   halfSpeed: boolean;
   pitchShift: number; // semitones (-12 to +12)
+  filter: number; // DJ Dual Filter: -1 (Lowpass) to +1 (Highpass), 0 = Flat
+  stutterRate: number; // 0 = normal, 0.5 = 1/2 bar, 0.25 = 1/4 bar, 0.125 = 1/8 bar, 0.0625 = 1/16 bar
+  source: 'mic' | 'guitar' | 'master';
   waveform: number[]; // normalized amplitude peaks for drawing
 }
 

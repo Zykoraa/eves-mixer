@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Plug,
   Plus,
@@ -18,6 +18,7 @@ import {
   Volume2,
   Search,
   X,
+  Zap,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { AudioEngine } from '../audio/AudioEngine';
@@ -47,6 +48,79 @@ export const VstPatchbay: React.FC = () => {
     `// Custom DSP Audio Processor\n// input: Float32Array, output: Float32Array\nfunction processAudio(input, output) {\n  for (let i = 0; i < input.length; i++) {\n    // Analog warmth saturation:\n    output[i] = Math.tanh(input[i] * 1.5);\n  }\n}`
   );
   const [scriptStatus, setScriptStatus] = useState<string>('Ready to compile & patch');
+
+  // Real-time frequency spectrum visualizer
+  const spectrumCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let animId: number;
+    const renderSpectrum = () => {
+      const canvas = spectrumCanvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const channelNode = engine.mixer.getChannel(state.selectedVstChannelIndex);
+          const analyser = channelNode?.analyserNode || engine.mixer.masterChannel.analyserNode;
+          const freqData = new Uint8Array(analyser.frequencyBinCount);
+          analyser.getByteFrequencyData(freqData);
+
+          const w = canvas.width;
+          const h = canvas.height;
+
+          ctx.fillStyle = '#0a0c12';
+          ctx.fillRect(0, 0, w, h);
+
+          // Grid lines
+          ctx.strokeStyle = '#181b28';
+          ctx.lineWidth = 1;
+          for (let f = 1; f <= 3; f++) {
+            const x = (w / 4) * f;
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+            ctx.stroke();
+          }
+
+          // Spectrum gradient fill
+          const gradient = ctx.createLinearGradient(0, 0, 0, h);
+          gradient.addColorStop(0, 'rgba(129, 140, 248, 0.85)'); // Indigo
+          gradient.addColorStop(0.5, 'rgba(56, 189, 248, 0.35)'); // Cyan
+          gradient.addColorStop(1, 'rgba(168, 85, 247, 0.05)'); // Purple
+
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.moveTo(0, h);
+
+          const sampleLen = Math.floor(freqData.length * 0.75);
+          const slice = w / sampleLen;
+          for (let i = 0; i < sampleLen; i++) {
+            const val = freqData[i] / 255;
+            const y = h - val * h * 0.92;
+            ctx.lineTo(i * slice, y);
+          }
+          ctx.lineTo(w, h);
+          ctx.closePath();
+          ctx.fill();
+
+          // Stroke line
+          ctx.strokeStyle = '#818cf8';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = 0; i < sampleLen; i++) {
+            const val = freqData[i] / 255;
+            const y = h - val * h * 0.92;
+            if (i === 0) ctx.moveTo(0, y);
+            else ctx.lineTo(i * slice, y);
+          }
+          ctx.stroke();
+        }
+      }
+      animId = requestAnimationFrame(renderSpectrum);
+    };
+
+    animId = requestAnimationFrame(renderSpectrum);
+    return () => cancelAnimationFrame(animId);
+  }, [state.selectedVstChannelIndex, engine]);
 
   const activeChannelIndex = state.selectedVstChannelIndex;
   const activeChannel = state.mixerChannels[activeChannelIndex] || state.mixerChannels[0];
@@ -312,7 +386,7 @@ export const VstPatchbay: React.FC = () => {
               {selectedInstance && selectedMeta ? (
                 <div className="max-w-3xl space-y-6">
                   {/* Plugin Header Banner */}
-                  <div className="p-4 rounded-2xl bg-[#191c28] border border-[#2e3346] flex items-center justify-between shadow-lg">
+                  <div className="p-4 rounded-2xl bg-[#191c28] border border-[#2e3346] flex flex-wrap items-center justify-between shadow-lg gap-3">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
                         <Sliders size={20} />
@@ -328,14 +402,39 @@ export const VstPatchbay: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-lg border border-[#2d3244] text-xs font-mono">
+                    <div className="flex items-center gap-2.5">
+                      {/* Preset Selector Dropdown */}
+                      {selectedMeta.presets && selectedMeta.presets.length > 0 && (
+                        <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-xl border border-[#2d3244]">
+                          <Sparkles size={12} className="text-yellow-400" />
+                          <span className="text-[10px] font-mono text-gray-400 uppercase">PRESET:</span>
+                          <select
+                            onChange={(e) => {
+                              const found = selectedMeta.presets?.find((pr) => pr.id === e.target.value);
+                              if (found) {
+                                store.applyVstPreset(activeChannelIndex, selectedInstance.instanceId, found.parameters);
+                              }
+                            }}
+                            defaultValue=""
+                            className="bg-transparent text-xs font-mono font-bold text-yellow-300 focus:outline-hidden cursor-pointer"
+                          >
+                            <option value="" disabled>Load Preset...</option>
+                            {selectedMeta.presets.map((pr) => (
+                              <option key={pr.id} value={pr.id} className="bg-[#181a24] text-white">
+                                {pr.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-xl border border-[#2d3244] text-xs font-mono">
                         <span className="text-gray-400">Mix:</span>
                         <strong className="text-indigo-400">{Math.round(selectedInstance.mix * 100)}%</strong>
                       </div>
                       <button
                         onClick={() => store.setVstBypass(activeChannelIndex, selectedInstance.instanceId, selectedInstance.enabled)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all border ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all border ${
                           selectedInstance.enabled
                             ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
                             : 'bg-red-500/20 text-red-400 border-red-500/40'
@@ -345,6 +444,23 @@ export const VstPatchbay: React.FC = () => {
                         {selectedInstance.enabled ? 'ACTIVE' : 'BYPASSED'}
                       </button>
                     </div>
+                  </div>
+
+                  {/* Real-time Channel Spectrum Analyzer Canvas */}
+                  <div className="p-3.5 bg-[#141622] border border-[#262a3c] rounded-2xl shadow-lg flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono text-gray-400">
+                      <span className="flex items-center gap-1.5 font-bold text-white">
+                        <Activity size={13} className="text-indigo-400" />
+                        <span>LIVE SPECTRUM VISUALIZER • {activeChannel.name.toUpperCase()}</span>
+                      </span>
+                      <span className="text-[10px] text-gray-500">Master FFT Frequency Response (20Hz - 20kHz)</span>
+                    </div>
+                    <canvas
+                      ref={spectrumCanvasRef}
+                      width={640}
+                      height={80}
+                      className="w-full h-20 bg-[#090a0f] rounded-xl border border-[#1d202e]"
+                    />
                   </div>
 
                   {/* Plugin Parameter Controls Grid */}

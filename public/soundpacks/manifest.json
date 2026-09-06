@@ -1,0 +1,77 @@
+{
+  "version": "1.0.0",
+  "kits": [
+    {
+      "id": "trap",
+      "name": "Roland TR-808 Modern Trap Kit",
+      "description": "Deep 808 sub, aggressive transient punch kick, crisp snappy snare, and bronze metallic hats.",
+      "path": "soundpacks/trap",
+      "sounds": {
+        "kick": "kick.ogg",
+        "808": "808.ogg",
+        "snare": "snare.ogg",
+        "clap": "clap.ogg",
+        "hihat_closed": "hihat_closed.ogg",
+        "hihat_open": "hihat_open.ogg",
+        "tom": "tom.ogg",
+        "rim": "rim.ogg",
+        "crash": "crash.ogg",
+        "fx": "fx.ogg"
+      }
+    },
+    {
+      "id": "tr808",
+      "name": "Classic Vintage TR-808 Studio",
+      "description": "Original unadulterated Roland TR-808 analog drum machine recordings.",
+      "path": "soundpacks/tr808",
+      "sounds": {
+        "kick": "kick.ogg",
+        "808": "808.ogg",
+        "snare": "snare.ogg",
+        "clap": "clap.ogg",
+        "hihat_closed": "hihat_closed.ogg",
+        "hihat_open": "hihat_open.ogg",
+        "tom": "tom.ogg",
+        "rim": "rim.ogg",
+        "crash": "crash.ogg",
+        "fx": "fx.ogg"
+      }
+    },
+    {
+      "id": "linndrum",
+      "name": "Linn LM-2 80s Synthwave Kit",
+      "description": "The definitive 1980s punch: heavy acoustic-hybrid kick, big gated snare, and punchy percussion.",
+      "path": "soundpacks/linndrum",
+      "sounds": {
+        "kick": "kick.ogg",
+        "808": "808.ogg",
+        "snare": "snare.ogg",
+        "clap": "clap.ogg",
+        "hihat_closed": "hihat_closed.ogg",
+        "hihat_open": "hihat_open.ogg",
+        "tom": "tom.ogg",
+        "rim": "rim.ogg",
+        "crash": "crash.ogg",
+        "fx": "fx.ogg"
+      }
+    },
+    {
+      "id": "lofi",
+      "name": "Casio RZ-1 Vintage Lo-Fi & Boom Bap",
+      "description": "Gritty 12-bit vintage sampler character, warm rounded thump, and loose vinyl pocket.",
+      "path": "soundpacks/lofi",
+      "sounds": {
+        "kick": "kick.ogg",
+        "808": "808.ogg",
+        "snare": "snare.ogg",
+        "clap": "clap.ogg",
+        "hihat_closed": "hihat_closed.ogg",
+        "hihat_open": "hihat_open.ogg",
+        "tom": "tom.ogg",
+        "rim": "rim.ogg",
+        "crash": "crash.ogg",
+        "fx": "fx.ogg"
+      }
+    }
+  ]
+}

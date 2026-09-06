@@ -376,10 +376,10 @@ const createInitialMixerChannels = (): MixerChannel[] => [
 ];
 
 const createInitialLooperDecks = (): LooperDeck[] => [
-  { id: 'deck-1', deckNumber: 1, name: 'Deck 1 (Beatbox/Drums)', status: 'empty', recordedBars: 2, audioBuffer: null, volume: 0.85, pan: 0, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, waveform: [] },
-  { id: 'deck-2', deckNumber: 2, name: 'Deck 2 (Bassline / Vocal)', status: 'empty', recordedBars: 2, audioBuffer: null, volume: 0.85, pan: 0, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, waveform: [] },
-  { id: 'deck-3', deckNumber: 3, name: 'Deck 3 (Harmonies / Hook)', status: 'empty', recordedBars: 4, audioBuffer: null, volume: 0.8, pan: -0.2, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, waveform: [] },
-  { id: 'deck-4', deckNumber: 4, name: 'Deck 4 (Acoustic / Lead)', status: 'empty', recordedBars: 4, audioBuffer: null, volume: 0.8, pan: 0.2, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, waveform: [] },
+  { id: 'deck-1', deckNumber: 1, name: 'Deck 1 (Beatbox/Drums)', status: 'empty', recordedBars: 2, audioBuffer: null, volume: 0.85, pan: 0, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, filter: 0, stutterRate: 0, source: 'mic', waveform: [] },
+  { id: 'deck-2', deckNumber: 2, name: 'Deck 2 (Bassline / Vocal)', status: 'empty', recordedBars: 2, audioBuffer: null, volume: 0.85, pan: 0, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, filter: 0, stutterRate: 0, source: 'mic', waveform: [] },
+  { id: 'deck-3', deckNumber: 3, name: 'Deck 3 (Harmonies / Hook)', status: 'empty', recordedBars: 4, audioBuffer: null, volume: 0.8, pan: -0.2, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, filter: 0, stutterRate: 0, source: 'guitar', waveform: [] },
+  { id: 'deck-4', deckNumber: 4, name: 'Deck 4 (Acoustic / Master)', status: 'empty', recordedBars: 4, audioBuffer: null, volume: 0.8, pan: 0.2, mute: false, solo: false, reverse: false, halfSpeed: false, pitchShift: 0, filter: 0, stutterRate: 0, source: 'master', waveform: [] },
 ];
 
 export const DEFAULT_AMP_SETTINGS: GuitarAmpSettings = {
@@ -1011,12 +1011,18 @@ class Store {
     if (!deck) return;
     Object.assign(deck, updates);
 
-    if (updates.volume !== undefined || updates.pan !== undefined || updates.mute !== undefined) {
+    if (
+      updates.volume !== undefined ||
+      updates.pan !== undefined ||
+      updates.mute !== undefined ||
+      updates.filter !== undefined
+    ) {
       this.audioEngine.looperStation.updateDeckParameters(
         deck.deckNumber,
         deck.mute ? 0 : deck.volume,
         deck.pan,
-        deck.mute
+        deck.mute,
+        deck.filter || 0
       );
     }
     this.notify();
@@ -1032,13 +1038,52 @@ class Store {
       id: clipId,
       trackIndex: 3, // Vocal/Audio track row
       looperDeckId: deck.id,
-      name: `Mic Loop ${deckNumber}`,
+      name: `Loop Deck ${deckNumber}`,
       startBar: 0,
       lengthBars: deck.recordedBars,
       color: '#eab308',
       type: 'audio',
     };
     this.addPlaylistClip(newClip);
+  }
+
+  // Convert recorded Looper clip into an editable Sampler Channel Track in Channel Rack
+  public sendDeckToChannelRack(deckNumber: number) {
+    const deck = this.state.looperDecks.find((d) => d.deckNumber === deckNumber);
+    if (!deck || !deck.audioBuffer) return;
+
+    const blob = this.audioEngine.looperStation.bufferToWavBlob(deck.audioBuffer);
+    const audioUrl = URL.createObjectURL(blob);
+    this.audioEngine.drumSynth.registerCustomSample(audioUrl, deck.audioBuffer);
+
+    const newTrackId = `track-loop-${Date.now()}`;
+    const newSteps: Record<string, StepData[]> = {};
+    for (const pat of this.state.patterns) {
+      newSteps[pat.id] = Array.from({ length: pat.lengthSteps }, (_, idx) => ({
+        active: idx === 0, // Trigger once on downbeat
+        velocity: 0.9,
+      }));
+    }
+
+    const newTrack: ChannelTrack = {
+      id: newTrackId,
+      name: `Deck ${deckNumber} Sampler`,
+      type: 'sampler',
+      color: '#eab308',
+      volume: 0.85,
+      pan: 0,
+      mute: false,
+      solo: false,
+      mixerChannelIndex: 6, // Route to Looper Channel
+      steps: newSteps,
+      customAudioUrl: audioUrl,
+      customAudioName: `Deck_${deckNumber}_Loop.wav`,
+    };
+
+    this.state.tracks.push(newTrack);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
   }
 
   // Inspiration Generators
@@ -1414,6 +1459,16 @@ class Store {
     const inst = this.state.vstInstances.find((v) => v.instanceId === instanceId);
     if (inst) inst.parameters[paramId] = value;
     this.notify();
+  }
+
+  public applyVstPreset(channelIndex: number, instanceId: string, parameters: Record<string, number | boolean | string>) {
+    this.audioEngine.vstEngine.applyPreset(channelIndex, instanceId, parameters);
+    const inst = this.state.vstInstances.find((v) => v.instanceId === instanceId);
+    if (inst) {
+      Object.assign(inst.parameters, parameters);
+    }
+    this.notify();
+    this.saveToStorage();
   }
 
   public sendMidiOut(note: number, velocity: number = 0.8, channel: number = 0) {

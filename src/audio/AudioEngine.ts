@@ -66,6 +66,7 @@ export class AudioEngine {
     this.guitarEngine = GuitarEngine.getInstance(this.ctx);
     const guitarChannel = this.mixer.getChannel(7);
     this.guitarEngine.routeToMixerChannel(guitarChannel);
+    this.looperStation.setAuxInputs(this.mixer.masterChannel.inputNode, guitarChannel.inputNode);
 
     // Initialize VST Host Engine
     this.vstEngine = VstEngine.getInstance(this.ctx);

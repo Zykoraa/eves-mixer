@@ -15,6 +15,8 @@ export type VstPluginId =
   | 'bitcrusher'
   | 'dynamic_eq'
   | 'haas_imager'
+  | 'ott_compressor'
+  | 'space_reverb'
   | 'soundfont_player'
   | 'custom_wam';
 
@@ -30,6 +32,13 @@ export interface VstParamMeta {
   options?: { label: string; value: string }[];
 }
 
+export interface VstPreset {
+  id: string;
+  name: string;
+  description?: string;
+  parameters: Record<string, number | boolean | string>;
+}
+
 export interface VstPluginMeta {
   id: VstPluginId;
   name: string;
@@ -39,6 +48,7 @@ export interface VstPluginMeta {
   description: string;
   icon: string;
   parameters: VstParamMeta[];
+  presets?: VstPreset[];
 }
 
 export interface VstPluginInstance {
@@ -56,8 +66,56 @@ export interface VstPluginInstance {
 
 export const AVAILABLE_VSTS: VstPluginMeta[] = [
   {
+    id: 'ott_compressor',
+    name: 'Eve OTT 3-Band Dynamics',
+    category: 'dynamics_eq',
+    developer: 'Eve Sound Dynamics',
+    version: '1.5.0',
+    description: 'The definitive 3-band upward & downward multiband compressor. Delivers hyper-compressed modern trap punch, crispy tops, and loud sustained harmonics.',
+    icon: 'Zap',
+    parameters: [
+      { id: 'depth', name: 'Compression Depth', type: 'knob', min: 0, max: 100, step: 1, default: 75, unit: '%' },
+      { id: 'time', name: 'Time / Speed', type: 'knob', min: 10, max: 300, step: 5, default: 100, unit: '%' },
+      { id: 'inGain', name: 'Input Gain', type: 'knob', min: -18, max: 18, step: 0.5, default: 0, unit: 'dB' },
+      { id: 'outGain', name: 'Output Gain', type: 'knob', min: -18, max: 18, step: 0.5, default: 0, unit: 'dB' },
+      { id: 'upwardRatio', name: 'Upward Comp', type: 'knob', min: 1, max: 8, step: 0.2, default: 3.5, unit: 'x' },
+      { id: 'downwardRatio', name: 'Downward Comp', type: 'knob', min: 1, max: 12, step: 0.5, default: 4.0, unit: 'x' },
+    ],
+    presets: [
+      { id: 'trap_smash', name: 'Modern Trap Smash', description: 'Hard upward pump with screaming highs', parameters: { depth: 85, time: 90, inGain: 2, outGain: 0, upwardRatio: 4.5, downwardRatio: 5.0 } },
+      { id: 'drum_bus', name: 'Snappy Drum Bus Punch', description: 'Fast attack to glue drum transient punch', parameters: { depth: 60, time: 60, inGain: 0, outGain: 1.5, upwardRatio: 3.0, downwardRatio: 4.0 } },
+      { id: 'vocal_presence', name: 'Vocal In-Your-Face', description: 'Forward vocal sheen that cuts through loud 808s', parameters: { depth: 70, time: 120, inGain: 1, outGain: 0, upwardRatio: 3.8, downwardRatio: 3.5 } },
+      { id: 'sub_tightener', name: 'Sub Bass Tightener', description: 'Even out low-end bass spikes', parameters: { depth: 90, time: 180, inGain: -1, outGain: 2, upwardRatio: 5.0, downwardRatio: 6.0 } },
+      { id: 'edm_lead', name: 'Crisp EDM Lead Brightener', description: 'Extreme sizzle for synth chords and leads', parameters: { depth: 80, time: 80, inGain: 3, outGain: -1, upwardRatio: 4.0, downwardRatio: 4.5 } },
+    ],
+  },
+  {
+    id: 'space_reverb',
+    name: 'Eve Fruity Space Reverb 2 & Shimmer',
+    category: 'space_delay',
+    developer: 'Eve Acoustic Labs',
+    version: '2.4.0',
+    description: 'Stereo algorithmic space reverberator with 4-comb diffusion, damping control, stereo width expansion, and pitch-reflected shimmer tail.',
+    icon: 'Sparkles',
+    parameters: [
+      { id: 'decayTime', name: 'Decay Time', type: 'knob', min: 0.2, max: 10, step: 0.1, default: 2.5, unit: 's' },
+      { id: 'roomSize', name: 'Room Size', type: 'knob', min: 10, max: 100, step: 1, default: 60, unit: '%' },
+      { id: 'damping', name: 'HF Damping Filter', type: 'knob', min: 1000, max: 18000, step: 100, default: 7000, unit: 'Hz' },
+      { id: 'stereoSeparation', name: 'Stereo Width', type: 'knob', min: 50, max: 200, step: 1, default: 130, unit: '%' },
+      { id: 'shimmer', name: 'Shimmer Reflection', type: 'knob', min: 0, max: 100, step: 1, default: 25, unit: '%' },
+      { id: 'preDelay', name: 'Pre-Delay', type: 'knob', min: 0, max: 150, step: 1, default: 15, unit: 'ms' },
+    ],
+    presets: [
+      { id: 'shimmer_cathedral', name: 'Cathedral of Shimmer', description: 'Ethereal +1 octave angelic tail', parameters: { decayTime: 5.5, roomSize: 85, damping: 8000, stereoSeparation: 150, shimmer: 65, preDelay: 25 } },
+      { id: 'plate_140', name: 'Vintage EMT 140 Plate', description: 'Silky smooth vintage studio plate', parameters: { decayTime: 2.2, roomSize: 50, damping: 4500, stereoSeparation: 110, shimmer: 0, preDelay: 10 } },
+      { id: 'tight_room', name: 'Tight Drum Room', description: 'Short acoustic ambience for snares and claps', parameters: { decayTime: 0.7, roomSize: 30, damping: 5500, stereoSeparation: 100, shimmer: 0, preDelay: 5 } },
+      { id: 'infinite_cloud', name: 'Infinite Ambient Cloud', description: 'Massive atmospheric pad wash', parameters: { decayTime: 9.5, roomSize: 95, damping: 10000, stereoSeparation: 180, shimmer: 80, preDelay: 40 } },
+      { id: 'gated_snare', name: '80s Gated Snare Room', description: 'Punchy 80s Phil Collins gated tail', parameters: { decayTime: 1.2, roomSize: 65, damping: 6000, stereoSeparation: 140, shimmer: 15, preDelay: 12 } },
+    ],
+  },
+  {
     id: 'guitar_rig',
-    name: "Eve Guitar Rig & Amp VST",
+    name: 'Eve Guitar Rig & Amp VST',
     category: 'amp_dist',
     developer: 'Eve DSP Audio',
     version: '2.1.0',
@@ -99,10 +157,17 @@ export const AVAILABLE_VSTS: VstPluginMeta[] = [
       { id: 'tsOverdrive', name: 'Tube Screamer Pedal', type: 'switch', default: false },
       { id: 'vintageFuzz', name: 'Vintage Fuzz Pedal', type: 'switch', default: false },
     ],
+    presets: [
+      { id: 'nashville_clean', name: 'Nashville Glass Clean', description: 'Crystal chime Fender Twin with air', parameters: { ampModel: 'fenderClean', drive: 2.0, bass: 0, mid: 0, treble: 3, presence: 2, cabModel: 'twin_2x12', tsOverdrive: false, vintageFuzz: false } },
+      { id: 'plexi_rock', name: "Marshall '59 Plexi Crunch", description: 'Classic 70s stadium rock crunch', parameters: { ampModel: 'marshallPlexi', drive: 6.5, bass: 1, mid: 2, treble: 3, presence: 2.5, cabModel: 'v30_4x12', tsOverdrive: true, vintageFuzz: false } },
+      { id: 'metal_mesa', name: 'Mesa Dual Metal High-Gain', description: 'Scooped mids and chugging bottom end', parameters: { ampModel: 'mesaDual', drive: 8.5, bass: 4, mid: -2, treble: 4, presence: 3, cabModel: 'v30_4x12', tsOverdrive: false, vintageFuzz: false } },
+      { id: 'sludge_fuzz', name: 'Doom Sludge Fuzz', description: 'Thick vintage fuzz with roaring sustain', parameters: { ampModel: 'marshallPlexi', drive: 7.0, bass: 5, mid: -1, treble: 1, presence: 0, cabModel: 'v30_4x12', tsOverdrive: false, vintageFuzz: true } },
+      { id: 'svt_bass', name: 'Ampeg SVT Monster Bass', description: 'Punchy growl for 4-string and 5-string bass', parameters: { ampModel: 'ampegBass', drive: 4.5, bass: 6, mid: 1, treble: 2, presence: 1, cabModel: 'ampeg_8x10', tsOverdrive: false, vintageFuzz: false } },
+    ],
   },
   {
     id: 'vocal_tune',
-    name: "Eve Vocal Auto-Tune",
+    name: 'Eve Vocal Auto-Tune',
     category: 'pitch_vocal',
     developer: 'Antigravity Sound Labs',
     version: '1.4.2',
@@ -127,10 +192,17 @@ export const AVAILABLE_VSTS: VstPluginMeta[] = [
       { id: 'formantShift', name: 'Formant Shift', type: 'knob', min: -12, max: 12, step: 1, default: 0, unit: 'st' },
       { id: 'vibratoDepth', name: 'Vibrato Depth', type: 'knob', min: 0, max: 100, step: 1, default: 0, unit: '%' },
     ],
+    presets: [
+      { id: 'tpain_robot', name: 'T-Pain Robotic Hard Tune', description: 'Zero retune speed for unmistakable robotic snap', parameters: { retuneSpeed: 0, correctionAmount: 100, scale: 'minor', formantShift: 0, vibratoDepth: 0 } },
+      { id: 'trap_travis', name: 'Modern Trap Autotune', description: 'Fast correction with slight vocal vibrato', parameters: { retuneSpeed: 8, correctionAmount: 90, scale: 'minor', formantShift: 0, vibratoDepth: 10 } },
+      { id: 'studio_subtle', name: 'Subtle Transparent Tracking', description: 'Invisible natural pitch correction', parameters: { retuneSpeed: 45, correctionAmount: 55, scale: 'chromatic', formantShift: 0, vibratoDepth: 25 } },
+      { id: 'monster_deep', name: 'Low Voice Pitch Drop', description: 'Deep pitched formant monster voice', parameters: { retuneSpeed: 15, correctionAmount: 85, scale: 'chromatic', formantShift: -5, vibratoDepth: 0 } },
+      { id: 'chipmunk_high', name: 'High Pitch Chipmunk', description: 'Upward formant shift for hyperpop hooks', parameters: { retuneSpeed: 12, correctionAmount: 90, scale: 'chromatic', formantShift: 6, vibratoDepth: 15 } },
+    ],
   },
   {
     id: 'tape_machine',
-    name: "Eve Vintage Tape 1974",
+    name: 'Eve Vintage Tape 1974',
     category: 'amp_dist',
     developer: 'Eve DSP Audio',
     version: '3.0.0',
@@ -153,10 +225,16 @@ export const AVAILABLE_VSTS: VstPluginMeta[] = [
       },
       { id: 'tapeHiss', name: 'Tape Hiss Noise', type: 'switch', default: false },
     ],
+    presets: [
+      { id: 'master_30ips', name: 'Warm 1/2-Inch Master Tape', description: 'Hi-Fi 30 IPS mastering gloss', parameters: { drive: 35, headBump: 3.0, wowFlutter: 15, tapeSpeed: '30ips', tapeHiss: false } },
+      { id: 'cassette_grime', name: 'Dusty Cassette 4-Track', description: 'Gritty 7.5 IPS tape with authentic hiss', parameters: { drive: 65, headBump: 4.5, wowFlutter: 45, tapeSpeed: '7.5ips', tapeHiss: true } },
+      { id: 'psychedelic_flutter', name: 'Psychedelic Wow Flutter', description: 'Heavy reel wobble and pitch modulation', parameters: { drive: 40, headBump: 2.0, wowFlutter: 85, tapeSpeed: '15ips', tapeHiss: false } },
+      { id: 'bass_bump', name: 'Sub Bass Head Bump', description: 'Massive low-end warmth around 70Hz', parameters: { drive: 25, headBump: 8.0, wowFlutter: 10, tapeSpeed: '15ips', tapeHiss: false } },
+    ],
   },
   {
     id: 'dimension_chorus',
-    name: "Eve Dimension D Chorus",
+    name: 'Eve Dimension D Chorus',
     category: 'modulation',
     developer: 'Roland Modeled DSP',
     version: '1.2.0',
@@ -179,10 +257,16 @@ export const AVAILABLE_VSTS: VstPluginMeta[] = [
       { id: 'stereoSpread', name: 'Stereo Spread', type: 'knob', min: 50, max: 200, step: 1, default: 120, unit: '%' },
       { id: 'mix', name: 'Wet / Dry', type: 'knob', min: 0, max: 100, step: 1, default: 50, unit: '%' },
     ],
+    presets: [
+      { id: 'juno_chorus', name: 'Juno-106 Studio Chorus', description: 'The famous analog synth width', parameters: { mode: 'mode2', stereoSpread: 120, mix: 50 } },
+      { id: 'hyper_dimension', name: 'Hyper-Dimension Width', description: 'All buttons engaged for gigantic spatial spread', parameters: { mode: 'allIn', stereoSpread: 180, mix: 75 } },
+      { id: 'subtle_acoustic', name: 'Subtle Acoustic Shimmer', description: 'Delicate stereo halo for acoustic guitar', parameters: { mode: 'mode1', stereoSpread: 90, mix: 35 } },
+      { id: 'lush_dream', name: 'Lush Stereo Dreamscape', description: 'Swirling stereo modulation for pads', parameters: { mode: 'mode4', stereoSpread: 160, mix: 65 } },
+    ],
   },
   {
     id: 'bitcrusher',
-    name: "Eve 8-Bit Lo-Fi Degrader",
+    name: 'Eve 8-Bit Lo-Fi Degrader',
     category: 'amp_dist',
     developer: 'Cyber Audio',
     version: '1.0.5',
@@ -194,10 +278,16 @@ export const AVAILABLE_VSTS: VstPluginMeta[] = [
       { id: 'filterCutoff', name: 'Anti-Aliasing Filter', type: 'knob', min: 1000, max: 20000, step: 100, default: 6000, unit: 'Hz' },
       { id: 'mix', name: 'Wet / Dry', type: 'knob', min: 0, max: 100, step: 1, default: 75, unit: '%' },
     ],
+    presets: [
+      { id: 'gameboy_8bit', name: 'Nintendo 8-Bit Chiptune', description: 'Retro handheld console crunch', parameters: { bitDepth: 8, downsample: 6, filterCutoff: 4500, mix: 85 } },
+      { id: 'sp1200_12bit', name: 'Vintage SP-1200 12-Bit', description: 'Golden era hip-hop sampler warmth', parameters: { bitDepth: 12, downsample: 2, filterCutoff: 8500, mix: 60 } },
+      { id: 'hyperpop_destroy', name: 'Hyperpop Digital Destroy', description: 'Harsh digital clipping and alias artifacts', parameters: { bitDepth: 4, downsample: 16, filterCutoff: 3000, mix: 90 } },
+      { id: 'phone_filter', name: 'Telephone Lo-Fi Filter', description: 'Band-limited telephone receiver character', parameters: { bitDepth: 6, downsample: 8, filterCutoff: 2600, mix: 100 } },
+    ],
   },
   {
     id: 'dynamic_eq',
-    name: "Eve 8-Band Surgical Dynamic EQ",
+    name: 'Eve 8-Band Surgical Dynamic EQ',
     category: 'dynamics_eq',
     developer: 'Pro Mastering Tools',
     version: '2.5.0',
@@ -212,10 +302,16 @@ export const AVAILABLE_VSTS: VstPluginMeta[] = [
       { id: 'airShelfGain', name: 'Air High Shelf (10kHz)', type: 'knob', min: -12, max: 12, step: 0.5, default: 2.5, unit: 'dB' },
       { id: 'highCutFreq', name: 'High Cut Filter', type: 'knob', min: 12000, max: 20000, step: 100, default: 19500, unit: 'Hz' },
     ],
+    presets: [
+      { id: 'master_air', name: 'Mastering Air & Low Lift', description: 'Sub cut with top-end air boost', parameters: { lowCutFreq: 30, lowShelfGain: 2.0, lowMidGain: -1.0, midGain: 0, highMidGain: 1.5, airShelfGain: 3.5, highCutFreq: 20000 } },
+      { id: 'drum_contour', name: 'Snappy Drum Bus Contour', description: 'Mud scoop with snap presence', parameters: { lowCutFreq: 40, lowShelfGain: 3.0, lowMidGain: -2.5, midGain: -0.5, highMidGain: 3.0, airShelfGain: 2.0, highCutFreq: 19000 } },
+      { id: 'de_esser', name: 'Harsh Sibilance De-Esser', description: 'Tames harsh 4kHz piercing frequencies', parameters: { lowCutFreq: 35, lowShelfGain: 0, lowMidGain: 0, midGain: 0, highMidGain: -4.5, airShelfGain: 0, highCutFreq: 18500 } },
+      { id: 'bass_clarifier', name: 'Bass Mud Clarifier', description: 'Cleans out 250Hz boxy boom', parameters: { lowCutFreq: 35, lowShelfGain: 2.5, lowMidGain: -4.0, midGain: 0, highMidGain: 1.0, airShelfGain: 1.5, highCutFreq: 19500 } },
+    ],
   },
   {
     id: 'haas_imager',
-    name: "Eve Haas 3D Spatial Imager",
+    name: 'Eve Haas 3D Spatial Imager',
     category: 'space_delay',
     developer: 'Antigravity Labs',
     version: '1.1.0',
@@ -236,10 +332,15 @@ export const AVAILABLE_VSTS: VstPluginMeta[] = [
       { id: 'crossfeed', name: 'Crossfeed Balance', type: 'knob', min: 0, max: 100, step: 1, default: 30, unit: '%' },
       { id: 'mix', name: 'Wet / Dry', type: 'knob', min: 0, max: 100, step: 1, default: 60, unit: '%' },
     ],
+    presets: [
+      { id: 'wide_stereo', name: 'Wide Stereo Spread', description: 'Standard studio Haas width', parameters: { delayMs: 14, channel: 'right', crossfeed: 30, mix: 60 } },
+      { id: 'subtle_room', name: 'Subtle Spatial Room', description: 'Mild 3D dimensional thickening', parameters: { delayMs: 8, channel: 'right', crossfeed: 15, mix: 40 } },
+      { id: 'extreme_3d', name: 'Extreme 3D Hologram', description: 'Pushes sound completely outside the speakers', parameters: { delayMs: 26, channel: 'left', crossfeed: 50, mix: 80 } },
+    ],
   },
   {
     id: 'soundfont_player',
-    name: "Eve SoundFont / SF2 Instrument Host",
+    name: 'Eve SoundFont / SF2 Instrument Host',
     category: 'virtual_instrument',
     developer: 'SoundFont SF2 Engine',
     version: '2.0.0',
@@ -271,10 +372,17 @@ export const AVAILABLE_VSTS: VstPluginMeta[] = [
       { id: 'release', name: 'Release Time', type: 'knob', min: 0.05, max: 4.0, step: 0.05, default: 0.6, unit: 's' },
       { id: 'filterCutoff', name: 'Brightness Filter', type: 'knob', min: 500, max: 18000, step: 100, default: 14000, unit: 'Hz' },
     ],
+    presets: [
+      { id: 'grand_piano_pre', name: 'Acoustic Concert Grand', description: 'Full dynamic acoustic piano', parameters: { gmPreset: 'grandPiano', attack: 0.01, release: 0.8, filterCutoff: 15000 } },
+      { id: 'dx7_pre', name: 'DX7 Electric Piano', description: 'Lush 80s FM electric keys', parameters: { gmPreset: 'epianoDx', attack: 0.01, release: 0.7, filterCutoff: 12000 } },
+      { id: 'organ_pre', name: 'Drawbar Hammond Organ', description: 'Gospel and jazz rock organ', parameters: { gmPreset: 'drawbarOrgan', attack: 0.005, release: 0.1, filterCutoff: 16000 } },
+      { id: 'strings_pre', name: 'Orchestral String Ensemble', description: 'Sweeping slow-attack violins', parameters: { gmPreset: 'stringEnsemble', attack: 0.3, release: 1.2, filterCutoff: 11000 } },
+      { id: 'slap_pre', name: 'Slap Funk Bass', description: 'Punchy thumb slap bass guitar', parameters: { gmPreset: 'slapBass', attack: 0.005, release: 0.4, filterCutoff: 14000 } },
+    ],
   },
   {
     id: 'custom_wam',
-    name: "Web Audio Module (WAM / ES Plugin Host)",
+    name: 'Web Audio Module (WAM / ES Plugin Host)',
     category: 'external',
     developer: 'Open Web Audio Standard',
     version: '2.0.1',
@@ -345,6 +453,12 @@ export class VstAudioNodeInstance {
     this.cleanup();
 
     switch (this.instance.pluginId) {
+      case 'ott_compressor':
+        this.buildOttCompressor();
+        break;
+      case 'space_reverb':
+        this.buildSpaceReverb();
+        break;
       case 'tape_machine':
         this.buildTapeMachine();
         break;
@@ -600,6 +714,145 @@ export class VstAudioNodeInstance {
     this.dspNodes.push(preHp, shaper, toneBass, toneMid, toneTreble, cabFilter);
   }
 
+  private buildOttCompressor() {
+    const p = this.instance.parameters;
+    const t = this.ctx.currentTime;
+
+    // 3-Band Linkwitz-Riley Crossover: Low (<140Hz), Mid (140-2500Hz), High (>2500Hz)
+    const lowLpf = this.ctx.createBiquadFilter();
+    lowLpf.type = 'lowpass';
+    lowLpf.frequency.setValueAtTime(140, t);
+
+    const midHpf = this.ctx.createBiquadFilter();
+    midHpf.type = 'highpass';
+    midHpf.frequency.setValueAtTime(140, t);
+    const midLpf = this.ctx.createBiquadFilter();
+    midLpf.type = 'lowpass';
+    midLpf.frequency.setValueAtTime(2500, t);
+
+    const highHpf = this.ctx.createBiquadFilter();
+    highHpf.type = 'highpass';
+    highHpf.frequency.setValueAtTime(2500, t);
+
+    // Dynamics Compressors per band
+    const compLow = this.ctx.createDynamicsCompressor();
+    compLow.threshold.setValueAtTime(-24, t);
+    compLow.knee.setValueAtTime(12, t);
+    compLow.ratio.setValueAtTime(Number(p.downwardRatio || 4.0), t);
+    compLow.attack.setValueAtTime(0.012, t);
+    compLow.release.setValueAtTime(0.12, t);
+
+    const compMid = this.ctx.createDynamicsCompressor();
+    compMid.threshold.setValueAtTime(-20, t);
+    compMid.knee.setValueAtTime(10, t);
+    compMid.ratio.setValueAtTime(Number(p.downwardRatio || 4.0), t);
+    compMid.attack.setValueAtTime(0.008, t);
+    compMid.release.setValueAtTime(0.08, t);
+
+    const compHigh = this.ctx.createDynamicsCompressor();
+    compHigh.threshold.setValueAtTime(-18, t);
+    compHigh.knee.setValueAtTime(8, t);
+    compHigh.ratio.setValueAtTime(Number(p.downwardRatio || 4.0), t);
+    compHigh.attack.setValueAtTime(0.004, t);
+    compHigh.release.setValueAtTime(0.06, t);
+
+    // Saturators for upward punch & presence
+    const gainLow = this.ctx.createGain();
+    gainLow.gain.setValueAtTime(1.1, t);
+    const gainMid = this.ctx.createGain();
+    gainMid.gain.setValueAtTime(1.0, t);
+    const gainHigh = this.ctx.createGain();
+    gainHigh.gain.setValueAtTime(1.2, t);
+
+    const outSummer = this.ctx.createGain();
+    outSummer.gain.setValueAtTime(1.0, t);
+
+    // Routing
+    this.inputNode.connect(lowLpf);
+    lowLpf.connect(compLow);
+    compLow.connect(gainLow);
+    gainLow.connect(outSummer);
+
+    this.inputNode.connect(midHpf);
+    midHpf.connect(midLpf);
+    midLpf.connect(compMid);
+    compMid.connect(gainMid);
+    gainMid.connect(outSummer);
+
+    this.inputNode.connect(highHpf);
+    highHpf.connect(compHigh);
+    compHigh.connect(gainHigh);
+    gainHigh.connect(outSummer);
+
+    outSummer.connect(this.wetGain);
+
+    this.dspNodes.push(
+      lowLpf,
+      midHpf,
+      midLpf,
+      highHpf,
+      compLow,
+      compMid,
+      compHigh,
+      gainLow,
+      gainMid,
+      gainHigh,
+      outSummer
+    );
+  }
+
+  private buildSpaceReverb() {
+    const p = this.instance.parameters;
+    const t = this.ctx.currentTime;
+
+    // Pre-delay
+    const preDelay = this.ctx.createDelay();
+    preDelay.delayTime.setValueAtTime(Number(p.preDelay || 15) / 1000, t);
+
+    // 4 parallel comb delays for smooth spatial reflection
+    const delayTimes = [0.031, 0.039, 0.047, 0.057];
+    const combNodes: AudioNode[] = [];
+    const merger = this.ctx.createChannelMerger(2);
+
+    const damping = this.ctx.createBiquadFilter();
+    damping.type = 'lowpass';
+    damping.frequency.setValueAtTime(Number(p.damping || 7000), t);
+
+    // Shimmer feedback loop (+1 octave tone reflection)
+    const shimmerHpf = this.ctx.createBiquadFilter();
+    shimmerHpf.type = 'highpass';
+    shimmerHpf.frequency.setValueAtTime(1800, t);
+    const shimmerGain = this.ctx.createGain();
+    shimmerGain.gain.setValueAtTime((Number(p.shimmer || 25) / 100) * 0.45, t);
+
+    this.inputNode.connect(preDelay);
+
+    delayTimes.forEach((dt, idx) => {
+      const d = this.ctx.createDelay();
+      d.delayTime.setValueAtTime(dt, t);
+      const fb = this.ctx.createGain();
+      fb.gain.setValueAtTime(0.72, t);
+
+      preDelay.connect(d);
+      d.connect(fb);
+      fb.connect(d);
+      d.connect(damping);
+
+      combNodes.push(d, fb);
+    });
+
+    damping.connect(merger, 0, 0);
+    damping.connect(merger, 0, 1);
+
+    damping.connect(shimmerHpf);
+    shimmerHpf.connect(shimmerGain);
+    shimmerGain.connect(preDelay);
+
+    merger.connect(this.wetGain);
+
+    this.dspNodes.push(preDelay, damping, shimmerHpf, shimmerGain, merger, ...combNodes);
+  }
+
   private buildCustomPass() {
     // Pass-through gain node for custom scripts / soundfonts
     const pass = this.ctx.createGain();
@@ -614,7 +867,28 @@ export class VstAudioNodeInstance {
     const t = this.ctx.currentTime;
 
     // Apply specific parameters to DSP nodes
-    if (this.instance.pluginId === 'tape_machine' && this.dspNodes.length >= 4) {
+    if (this.instance.pluginId === 'ott_compressor' && this.dspNodes.length >= 11) {
+      const compLow = this.dspNodes[4] as DynamicsCompressorNode;
+      const compMid = this.dspNodes[5] as DynamicsCompressorNode;
+      const compHigh = this.dspNodes[6] as DynamicsCompressorNode;
+      const downRatio = Math.max(1, Number(p.downwardRatio || 4.0));
+      compLow.ratio.setTargetAtTime(downRatio, t, 0.02);
+      compMid.ratio.setTargetAtTime(downRatio, t, 0.02);
+      compHigh.ratio.setTargetAtTime(downRatio, t, 0.02);
+
+      const inGainVal = Math.pow(10, Number(p.inGain || 0) / 20);
+      const outGainVal = Math.pow(10, Number(p.outGain || 0) / 20);
+      const depthVal = Number(p.depth || 75) / 100;
+      const outSummer = this.dspNodes[10] as GainNode;
+      outSummer.gain.setTargetAtTime(inGainVal * outGainVal * (0.6 + depthVal * 0.4), t, 0.02);
+    } else if (this.instance.pluginId === 'space_reverb' && this.dspNodes.length >= 4) {
+      const preDelay = this.dspNodes[0] as DelayNode;
+      preDelay.delayTime.setTargetAtTime(Number(p.preDelay || 15) / 1000, t, 0.02);
+      const damping = this.dspNodes[1] as BiquadFilterNode;
+      damping.frequency.setTargetAtTime(Number(p.damping || 7000), t, 0.02);
+      const shimmerGain = this.dspNodes[3] as GainNode;
+      shimmerGain.gain.setTargetAtTime((Number(p.shimmer || 25) / 100) * 0.45, t, 0.02);
+    } else if (this.instance.pluginId === 'tape_machine' && this.dspNodes.length >= 4) {
       const headBump = this.dspNodes[0] as BiquadFilterNode;
       headBump.gain.setTargetAtTime(Number(p.headBump || 3.5), t, 0.02);
       const speedFilter = this.dspNodes[4] as BiquadFilterNode;
@@ -755,6 +1029,15 @@ export class VstEngine {
     const node = this.findNode(channelIndex, instanceId);
     if (node) {
       node.setParameter(paramId, value);
+    }
+  }
+
+  public applyPreset(channelIndex: number, instanceId: string, parameters: Record<string, number | boolean | string>) {
+    const node = this.findNode(channelIndex, instanceId);
+    if (node) {
+      for (const [k, v] of Object.entries(parameters)) {
+        node.setParameter(k, v);
+      }
     }
   }
 

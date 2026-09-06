@@ -4,12 +4,72 @@ export class DrumSynth {
   private ctx: AudioContext;
   private noiseBuffer: AudioBuffer | null = null;
   private customBuffers: Map<string, AudioBuffer> = new Map();
+  private soundpackBuffers: Map<string, Map<DrumSoundId, AudioBuffer>> = new Map();
+  private loadingSoundpacks: boolean = false;
+  private soundpacksLoaded: boolean = false;
   private softClipCurve: Float32Array<ArrayBuffer>;
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
     this.generateNoiseBuffer();
     this.softClipCurve = this.generateSoftClipCurve(2.2);
+    this.preloadAllSoundpacks();
+  }
+
+  // Preload all studio-recorded soundpacks (TR-808, LinnDrum, Casio RZ-1, Trap) in the background
+  public async preloadAllSoundpacks() {
+    if (this.loadingSoundpacks || this.soundpacksLoaded) return;
+    this.loadingSoundpacks = true;
+
+    const kits = ['trap', 'tr808', 'linndrum', 'lofi'];
+    const soundIds: DrumSoundId[] = [
+      'kick',
+      '808',
+      'snare',
+      'clap',
+      'hihat_closed',
+      'hihat_open',
+      'tom',
+      'rim',
+      'crash',
+      'fx',
+    ];
+
+    // Support both root-relative and Vite base path
+    const metaBase = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL || './';
+    const cleanBase = metaBase.endsWith('/') ? metaBase : metaBase + '/';
+
+    for (const kit of kits) {
+      if (!this.soundpackBuffers.has(kit)) {
+        this.soundpackBuffers.set(kit, new Map());
+      }
+      const kitMap = this.soundpackBuffers.get(kit)!;
+
+      await Promise.all(
+        soundIds.map(async (sound) => {
+          try {
+            const primaryUrl = `${cleanBase}soundpacks/${kit}/${sound}.ogg`;
+            let res = await fetch(primaryUrl);
+            if (!res.ok) {
+              res = await fetch(`./soundpacks/${kit}/${sound}.ogg`);
+            }
+            if (!res.ok) {
+              res = await fetch(`/soundpacks/${kit}/${sound}.ogg`);
+            }
+            if (res.ok) {
+              const arrayBuf = await res.arrayBuffer();
+              const audioBuf = await this.ctx.decodeAudioData(arrayBuf);
+              kitMap.set(sound, audioBuf);
+            }
+          } catch {
+            // Graceful fallback to physical modeling if sample fetch fails
+          }
+        })
+      );
+    }
+
+    this.soundpacksLoaded = true;
+    this.loadingSoundpacks = false;
   }
 
   // Generate 2 seconds of decorrelated noise for snares, claps, and shimmer
@@ -73,6 +133,29 @@ export class DrumSynth {
 
     const safeVel = Math.max(0.05, Math.min(1.4, velocity));
 
+    // Resolve kit mapping to loaded soundpacks
+    let resolvedKit = kitId as string;
+    if (kitId === 'synthwave') resolvedKit = 'linndrum';
+    else if (kitId === 'house') resolvedKit = 'tr808';
+    else if (kitId === 'acoustic') resolvedKit = 'linndrum';
+    else if (kitId === 'glitch') resolvedKit = 'trap';
+
+    // 1. Check if real studio soundpack sample is available
+    const kitMap = this.soundpackBuffers.get(resolvedKit) || this.soundpackBuffers.get('trap');
+    const sampleBuffer = kitMap?.get(soundId);
+    if (sampleBuffer) {
+      this.playAudioSampleBuffer(
+        sampleBuffer,
+        time,
+        safeVel,
+        destination,
+        pitchOffset,
+        resolvedKit === 'trap' ? 1.9 : 1.4
+      );
+      return;
+    }
+
+    // 2. High-fidelity physical modeling fallback if sample is not loaded
     switch (soundId) {
       case 'kick':
         this.playProKick(time, safeVel, destination, kitId, pitchOffset);
@@ -107,9 +190,15 @@ export class DrumSynth {
     }
   }
 
-  private playCustomSample(url: string, time: number, velocity: number, destination: AudioNode, pitchOffset: number = 0) {
-    const buffer = this.customBuffers.get(url);
-    if (!buffer) return;
+  // Play real studio audio sample with pitch shift, velocity scaling, and soft clipper
+  private playAudioSampleBuffer(
+    buffer: AudioBuffer,
+    time: number,
+    velocity: number,
+    destination: AudioNode,
+    pitchOffset: number = 0,
+    drive: number = 1.6
+  ) {
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     if (pitchOffset !== 0) {
@@ -117,9 +206,19 @@ export class DrumSynth {
     }
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(velocity, time);
+
+    const clipper = this.createSoftClipper(drive);
     source.connect(gain);
-    gain.connect(destination);
+    gain.connect(clipper);
+    clipper.connect(destination);
+
     source.start(time);
+  }
+
+  private playCustomSample(url: string, time: number, velocity: number, destination: AudioNode, pitchOffset: number = 0) {
+    const buffer = this.customBuffers.get(url);
+    if (!buffer) return;
+    this.playAudioSampleBuffer(buffer, time, velocity, destination, pitchOffset, 1.5);
   }
 
   // =========================================================================

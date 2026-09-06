@@ -226,11 +226,17 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       });
     });
 
-    const beatTemplates: { id: 'trap' | 'boomBap' | 'house' | 'drill'; name: string; desc: string }[] = [
-      { id: 'trap', name: 'Trap Rolling Hats Beat Template', desc: '140 BPM fast hats and hard kick drop' },
-      { id: 'boomBap', name: 'Swung Lo-Fi Boom Bap Template', desc: '92 BPM swung groove and vinyl pocket' },
-      { id: 'house', name: '4-on-the-Floor House Groove Template', desc: '126 BPM classic four-on-the-floor dance rhythm' },
-      { id: 'drill', name: 'UK / NY Drill Bounce Template', desc: '142 BPM sliding hats and syncopated snare' },
+    const beatTemplates: {
+      id: 'trap' | 'boomBap' | 'house' | 'drill' | 'synthwave' | 'phonk';
+      name: string;
+      desc: string;
+    }[] = [
+      { id: 'trap', name: 'Trap Banger Beat Template', desc: '140 BPM rolling 32nd hats, sliding 808s and punchy kick drop' },
+      { id: 'drill', name: 'UK / NY Drill Bounce Template', desc: '142 BPM sliding 808s and syncopated 3rd-beat snare' },
+      { id: 'boomBap', name: '90s Lo-Fi Boom Bap Template', desc: '90 BPM 28% MPC swung groove and vinyl pocket' },
+      { id: 'synthwave', name: '80s Synthwave Drive Template', desc: '124 BPM gated reverb snare, 16th bass and 4/4 kick' },
+      { id: 'house', name: 'Club House 4/4 Groove Template', desc: '126 BPM 909 kick and upbeat open hat rhythm' },
+      { id: 'phonk', name: 'Drift Phonk Heat Template', desc: '155 BPM distorted 808 sub and frantic rolling hats' },
     ];
 
     beatTemplates.forEach((bt) => {

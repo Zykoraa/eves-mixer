@@ -40,6 +40,9 @@ import {
 import { MidiManager } from '../audio/MidiManager';
 
 // Default initial tracks
+const CURRENT_STORAGE_VERSION = 'v2_pro_producer';
+
+// Default initial tracks with authentic modern trap/r&b groove
 const createInitialTracks = (): ChannelTrack[] => [
   {
     id: 't-kick',
@@ -47,28 +50,28 @@ const createInitialTracks = (): ChannelTrack[] => [
     type: 'drum',
     soundId: 'kick',
     color: '#ff5722',
-    volume: 0.9,
+    volume: 0.95,
     pan: 0,
     mute: false,
     solo: false,
     mixerChannelIndex: 1,
     steps: {
       'pat-1': [
-        { active: true, velocity: 1.0 },
+        { active: true, velocity: 1.0 },   // 0: Downbeat heavy punch
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
-        { active: false, velocity: 0.8 },
-        { active: true, velocity: 0.95 },
-        { active: false, velocity: 0.8 },
+        { active: true, velocity: 0.9 },   // 7: Syncopated pocket
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
+        { active: true, velocity: 1.0 },   // 10: Driving punch
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
-        { active: true, velocity: 0.7 },
+        { active: false, velocity: 0.8 },
+        { active: true, velocity: 0.85 },  // 14: Turnaround kick
         { active: false, velocity: 0.8 },
       ],
     },
@@ -79,7 +82,7 @@ const createInitialTracks = (): ChannelTrack[] => [
     type: 'drum',
     soundId: 'clap',
     color: '#ff9800',
-    volume: 0.85,
+    volume: 0.9,
     pan: 0,
     mute: false,
     solo: false,
@@ -90,7 +93,7 @@ const createInitialTracks = (): ChannelTrack[] => [
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
-        { active: true, velocity: 1.0 },
+        { active: true, velocity: 1.0 },   // 4: Beat 2
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
@@ -98,7 +101,7 @@ const createInitialTracks = (): ChannelTrack[] => [
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
-        { active: true, velocity: 1.0 },
+        { active: true, velocity: 1.0 },   // 12: Beat 4
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
@@ -111,13 +114,30 @@ const createInitialTracks = (): ChannelTrack[] => [
     type: 'drum',
     soundId: 'snare',
     color: '#ffb74d',
-    volume: 0.8,
+    volume: 0.85,
     pan: 0,
     mute: false,
     solo: false,
     mixerChannelIndex: 1,
     steps: {
-      'pat-1': Array.from({ length: 16 }, () => ({ active: false, velocity: 0.8 })),
+      'pat-1': [
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: false, velocity: 0.8 },
+        { active: true, velocity: 0.7 },   // 15: Ghost pickup into next bar
+      ],
     },
   },
   {
@@ -126,13 +146,30 @@ const createInitialTracks = (): ChannelTrack[] => [
     type: 'drum',
     soundId: 'hihat_closed',
     color: '#00d2ff',
-    volume: 0.7,
-    pan: -0.1,
+    volume: 0.8,
+    pan: -0.05,
     mute: false,
     solo: false,
     mixerChannelIndex: 2,
     steps: {
-      'pat-1': Array.from({ length: 16 }, (_, i) => ({ active: i % 2 === 0, velocity: i % 4 === 0 ? 0.9 : 0.6 })),
+      'pat-1': [
+        { active: true, velocity: 0.95 },
+        { active: true, velocity: 0.40 },
+        { active: true, velocity: 0.75 },
+        { active: true, velocity: 0.45 },
+        { active: true, velocity: 0.90 },
+        { active: true, velocity: 0.40 },
+        { active: true, velocity: 0.80 },
+        { active: true, velocity: 0.50 },
+        { active: true, velocity: 0.95 },
+        { active: true, velocity: 0.45 },
+        { active: true, velocity: 0.75 },
+        { active: true, velocity: 0.50 },
+        { active: true, velocity: 0.95, pitchOffset: 0 },
+        { active: true, velocity: 0.82, pitchOffset: -2 },
+        { active: true, velocity: 0.88, pitchOffset: 2 },
+        { active: true, velocity: 0.95, pitchOffset: 5 }, // Rolling 32nd-style triplet fill
+      ],
     },
   },
   {
@@ -141,8 +178,8 @@ const createInitialTracks = (): ChannelTrack[] => [
     type: 'drum',
     soundId: 'hihat_open',
     color: '#38bdf8',
-    volume: 0.65,
-    pan: 0.2,
+    volume: 0.75,
+    pan: 0.15,
     mute: false,
     solo: false,
     mixerChannelIndex: 2,
@@ -150,7 +187,7 @@ const createInitialTracks = (): ChannelTrack[] => [
       'pat-1': [
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
-        { active: true, velocity: 0.75 },
+        { active: true, velocity: 0.85 },  // 2: Offbeat sizzle
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
@@ -158,7 +195,7 @@ const createInitialTracks = (): ChannelTrack[] => [
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
-        { active: true, velocity: 0.75 },
+        { active: true, velocity: 0.85 },  // 10: Offbeat sizzle
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
@@ -173,28 +210,28 @@ const createInitialTracks = (): ChannelTrack[] => [
     type: 'drum',
     soundId: '808',
     color: '#a855f7',
-    volume: 0.9,
+    volume: 1.0,
     pan: 0,
     mute: false,
     solo: false,
     mixerChannelIndex: 3,
     steps: {
       'pat-1': [
-        { active: true, velocity: 1.0 },
+        { active: true, velocity: 1.0, pitchOffset: 0 },   // C root
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
-        { active: false, velocity: 0.8 },
-        { active: true, velocity: 0.9 },
-        { active: false, velocity: 0.8 },
+        { active: true, velocity: 0.9, pitchOffset: 0 },   // C root
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
+        { active: true, velocity: 0.95, pitchOffset: -2 }, // Bb slide
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
         { active: false, velocity: 0.8 },
+        { active: true, velocity: 0.85, pitchOffset: 3 },  // Eb punch
         { active: false, velocity: 0.8 },
       ],
     },
@@ -214,13 +251,13 @@ const createInitialTracks = (): ChannelTrack[] => [
     },
   },
   {
-    id: 't-sample',
-    name: 'Vocal / Sample Pad',
-    type: 'sampler',
-    soundId: 'fx',
-    color: '#22c55e',
-    volume: 0.8,
-    pan: 0,
+    id: 't-rhodes',
+    name: 'Vintage Rhodes EP',
+    type: 'instrument',
+    instrumentId: 'rhodes_ep',
+    color: '#0284c7',
+    volume: 0.88,
+    pan: 0.05,
     mute: false,
     solo: false,
     mixerChannelIndex: 5,
@@ -234,8 +271,8 @@ const createInitialTracks = (): ChannelTrack[] => [
     type: 'instrument',
     instrumentId: 'grand_piano',
     color: '#38bdf8',
-    volume: 0.9,
-    pan: 0,
+    volume: 0.85,
+    pan: -0.05,
     mute: false,
     solo: false,
     mixerChannelIndex: 5,
@@ -244,16 +281,16 @@ const createInitialTracks = (): ChannelTrack[] => [
     },
   },
   {
-    id: 't-rhodes',
-    name: 'Vintage Rhodes EP',
-    type: 'instrument',
-    instrumentId: 'rhodes_ep',
-    color: '#0284c7',
-    volume: 0.85,
-    pan: 0.1,
+    id: 't-sample',
+    name: 'Vocal / Sample Pad',
+    type: 'sampler',
+    soundId: 'fx',
+    color: '#22c55e',
+    volume: 0.75,
+    pan: 0,
     mute: false,
     solo: false,
-    mixerChannelIndex: 5,
+    mixerChannelIndex: 6,
     steps: {
       'pat-1': Array.from({ length: 16 }, () => ({ active: false, velocity: 0.8 })),
     },
@@ -264,7 +301,7 @@ const createInitialTracks = (): ChannelTrack[] => [
     type: 'instrument',
     instrumentId: 'electric_guitar',
     color: '#ef4444',
-    volume: 0.9,
+    volume: 0.85,
     pan: -0.1,
     mute: false,
     solo: false,
@@ -278,30 +315,44 @@ const createInitialTracks = (): ChannelTrack[] => [
 const createInitialPatterns = (): Pattern[] => [
   {
     id: 'pat-1',
-    name: 'Pattern 1 (Main Groove)',
+    name: 'Pattern 1 (Main Trap Groove)',
     color: '#ff763b',
     lengthSteps: 16,
     notes: [
-      // Melodic notes for synth track
-      { id: 'n-1', trackId: 't-synth', midiNote: 60, startStep: 0, durationSteps: 2, velocity: 0.85 }, // C4
-      { id: 'n-2', trackId: 't-synth', midiNote: 63, startStep: 4, durationSteps: 2, velocity: 0.85 }, // Eb4
-      { id: 'n-3', trackId: 't-synth', midiNote: 65, startStep: 8, durationSteps: 3, velocity: 0.9 },  // F4
-      { id: 'n-4', trackId: 't-synth', midiNote: 67, startStep: 12, durationSteps: 2, velocity: 0.8 }, // G4
-      { id: 'n-5', trackId: 't-synth', midiNote: 63, startStep: 14, durationSteps: 2, velocity: 0.85 },
+      // Atmospheric Neo-Soul / Dark Trap chords on Rhodes
+      { id: 'rh-1', trackId: 't-rhodes', midiNote: 48, startStep: 0, durationSteps: 7, velocity: 0.75 }, // C3
+      { id: 'rh-2', trackId: 't-rhodes', midiNote: 55, startStep: 0, durationSteps: 7, velocity: 0.72 }, // G3
+      { id: 'rh-3', trackId: 't-rhodes', midiNote: 58, startStep: 0, durationSteps: 7, velocity: 0.72 }, // Bb3
+      { id: 'rh-4', trackId: 't-rhodes', midiNote: 62, startStep: 0, durationSteps: 7, velocity: 0.78 }, // D4
+      { id: 'rh-5', trackId: 't-rhodes', midiNote: 63, startStep: 0, durationSteps: 7, velocity: 0.80 }, // Eb4 (Cm9)
+
+      { id: 'rh-6', trackId: 't-rhodes', midiNote: 44, startStep: 8, durationSteps: 7, velocity: 0.75 }, // Ab2
+      { id: 'rh-7', trackId: 't-rhodes', midiNote: 51, startStep: 8, durationSteps: 7, velocity: 0.75 }, // Eb3
+      { id: 'rh-8', trackId: 't-rhodes', midiNote: 55, startStep: 8, durationSteps: 7, velocity: 0.72 }, // G3
+      { id: 'rh-9', trackId: 't-rhodes', midiNote: 60, startStep: 8, durationSteps: 7, velocity: 0.80 }, // C4 (Abmaj7)
+
+      // Catchy melodic top-line synth lead hook
+      { id: 'syn-1', trackId: 't-synth', midiNote: 67, startStep: 0, durationSteps: 2, velocity: 0.85 }, // G4
+      { id: 'syn-2', trackId: 't-synth', midiNote: 70, startStep: 3, durationSteps: 1, velocity: 0.80 }, // Bb4
+      { id: 'syn-3', trackId: 't-synth', midiNote: 72, startStep: 4, durationSteps: 3, velocity: 0.90 }, // C5
+      { id: 'syn-4', trackId: 't-synth', midiNote: 67, startStep: 8, durationSteps: 2, velocity: 0.85 }, // G4
+      { id: 'syn-5', trackId: 't-synth', midiNote: 65, startStep: 11, durationSteps: 1, velocity: 0.80 }, // F4
+      { id: 'syn-6', trackId: 't-synth', midiNote: 63, startStep: 12, durationSteps: 2, velocity: 0.85 }, // Eb4
+      { id: 'syn-7', trackId: 't-synth', midiNote: 62, startStep: 14, durationSteps: 2, velocity: 0.80 }, // D4
     ],
   },
   {
     id: 'pat-2',
-    name: 'Pattern 2 (Chords)',
+    name: 'Pattern 2 (Verse Progression)',
     color: '#38bdf8',
     lengthSteps: 16,
     notes: [
-      { id: 'c-1', trackId: 't-synth', midiNote: 60, startStep: 0, durationSteps: 7, velocity: 0.75 },
-      { id: 'c-2', trackId: 't-synth', midiNote: 63, startStep: 0, durationSteps: 7, velocity: 0.75 },
-      { id: 'c-3', trackId: 't-synth', midiNote: 67, startStep: 0, durationSteps: 7, velocity: 0.75 },
-      { id: 'c-4', trackId: 't-synth', midiNote: 58, startStep: 8, durationSteps: 7, velocity: 0.75 },
-      { id: 'c-5', trackId: 't-synth', midiNote: 62, startStep: 8, durationSteps: 7, velocity: 0.75 },
-      { id: 'c-6', trackId: 't-synth', midiNote: 65, startStep: 8, durationSteps: 7, velocity: 0.75 },
+      { id: 'c-1', trackId: 't-piano', midiNote: 48, startStep: 0, durationSteps: 8, velocity: 0.8 },
+      { id: 'c-2', trackId: 't-piano', midiNote: 55, startStep: 0, durationSteps: 8, velocity: 0.8 },
+      { id: 'c-3', trackId: 't-piano', midiNote: 60, startStep: 0, durationSteps: 8, velocity: 0.8 },
+      { id: 'c-4', trackId: 't-piano', midiNote: 46, startStep: 8, durationSteps: 8, velocity: 0.8 },
+      { id: 'c-5', trackId: 't-piano', midiNote: 53, startStep: 8, durationSteps: 8, velocity: 0.8 },
+      { id: 'c-6', trackId: 't-piano', midiNote: 58, startStep: 8, durationSteps: 8, velocity: 0.8 },
     ],
   },
 ];
@@ -455,7 +506,12 @@ class Store {
     let initialState: Partial<DawStoreState> = {};
     if (saved) {
       try {
-        initialState = JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed._version === CURRENT_STORAGE_VERSION) {
+          initialState = parsed;
+        } else {
+          console.info("Upgrading project state to Eve's Mixer Pro Studio Audio Engine");
+        }
       } catch (e) {
         console.warn('Could not parse saved state:', e);
       }
@@ -464,7 +520,7 @@ class Store {
     this.state = {
       projectName: initialState.projectName || "Eve's Mixer Project",
       isPlaying: false,
-      bpm: initialState.bpm || 132,
+      bpm: initialState.bpm || 140,
       swing: initialState.swing || 0,
       playbackMode: initialState.playbackMode || 'pattern',
       metronome: false,
@@ -603,6 +659,7 @@ class Store {
   public saveToStorage() {
     try {
       const copy = {
+        _version: CURRENT_STORAGE_VERSION,
         projectName: this.state.projectName,
         bpm: this.state.bpm,
         swing: this.state.swing,
@@ -1018,51 +1075,139 @@ class Store {
     this.saveToStorage();
   }
 
-  public applyDrumPreset(style: 'trap' | 'boomBap' | 'house' | 'drill') {
+  public applyDrumPreset(style: 'trap' | 'boomBap' | 'house' | 'drill' | 'synthwave' | 'phonk') {
     const patId = this.state.selectedPatternId;
     const kick = this.state.tracks.find((t) => t.soundId === 'kick');
     const clap = this.state.tracks.find((t) => t.soundId === 'clap');
     const snare = this.state.tracks.find((t) => t.soundId === 'snare');
     const hat = this.state.tracks.find((t) => t.soundId === 'hihat_closed');
+    const openHat = this.state.tracks.find((t) => t.soundId === 'hihat_open');
     const sub = this.state.tracks.find((t) => t.soundId === '808');
 
     // Clear existing drum steps
-    [kick, clap, snare, hat, sub].forEach((t) => {
+    [kick, clap, snare, hat, openHat, sub].forEach((t) => {
       if (t) t.steps[patId] = Array.from({ length: 16 }, () => ({ active: false, velocity: 0.8 }));
     });
 
     if (style === 'trap') {
       this.setBpm(140);
-      if (kick) [0, 8, 14].forEach((s) => (kick.steps[patId][s] = { active: true, velocity: 1.0 }));
-      if (clap) [4, 12].forEach((s) => (clap.steps[patId][s] = { active: true, velocity: 0.95 }));
+      this.setSwing(0);
+      if (kick) {
+        [0, 7, 10, 14].forEach((s, idx) => {
+          kick.steps[patId][s] = { active: true, velocity: idx === 0 || idx === 2 ? 1.0 : 0.88 };
+        });
+      }
+      if (clap) [4, 12].forEach((s) => (clap.steps[patId][s] = { active: true, velocity: 1.0 }));
+      if (snare) snare.steps[patId][15] = { active: true, velocity: 0.7 };
+      if (openHat) [2, 10].forEach((s) => (openHat.steps[patId][s] = { active: true, velocity: 0.85 }));
       if (hat) {
-        // Fast rolling hats
+        const velMap = [0.95, 0.40, 0.75, 0.45, 0.90, 0.40, 0.80, 0.50, 0.95, 0.45, 0.75, 0.50, 0.95, 0.82, 0.88, 0.95];
+        const pitchMap = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, 2, 5];
         for (let i = 0; i < 16; i++) {
-          hat.steps[patId][i] = { active: true, velocity: i % 4 === 0 ? 0.9 : 0.65 };
+          hat.steps[patId][i] = { active: true, velocity: velMap[i], pitchOffset: pitchMap[i] };
         }
       }
-      if (sub) [0, 8].forEach((s) => (sub.steps[patId][s] = { active: true, velocity: 0.95 }));
-    } else if (style === 'house') {
-      this.setBpm(126);
-      if (kick) [0, 4, 8, 12].forEach((s) => (kick.steps[patId][s] = { active: true, velocity: 1.0 }));
-      if (clap) [4, 12].forEach((s) => (clap.steps[patId][s] = { active: true, velocity: 0.9 }));
-      if (hat) [2, 6, 10, 14].forEach((s) => (hat.steps[patId][s] = { active: true, velocity: 0.8 }));
-    } else if (style === 'boomBap') {
-      this.setBpm(92);
-      this.setSwing(25);
-      if (kick) [0, 6, 10].forEach((s) => (kick.steps[patId][s] = { active: true, velocity: 0.95 }));
-      if (snare) [4, 12].forEach((s) => (snare.steps[patId][s] = { active: true, velocity: 0.9 }));
-      if (hat) {
-        for (let i = 0; i < 16; i += 2) {
-          hat.steps[patId][i] = { active: true, velocity: 0.75 };
-        }
+      if (sub) {
+        sub.steps[patId][0] = { active: true, velocity: 1.0, pitchOffset: 0 };
+        sub.steps[patId][7] = { active: true, velocity: 0.9, pitchOffset: 0 };
+        sub.steps[patId][10] = { active: true, velocity: 0.95, pitchOffset: -2 };
+        sub.steps[patId][14] = { active: true, velocity: 0.85, pitchOffset: 3 };
       }
     } else if (style === 'drill') {
       this.setBpm(142);
-      if (kick) [0, 10].forEach((s) => (kick.steps[patId][s] = { active: true, velocity: 1.0 }));
-      if (snare) [6, 14].forEach((s) => (snare.steps[patId][s] = { active: true, velocity: 0.95 }));
-      if (hat) [0, 3, 6, 8, 11, 14].forEach((s) => (hat.steps[patId][s] = { active: true, velocity: 0.8 }));
-      if (sub) [0, 10].forEach((s) => (sub.steps[patId][s] = { active: true, velocity: 0.95 }));
+      this.setSwing(0);
+      if (kick) {
+        kick.steps[patId][0] = { active: true, velocity: 1.0 };
+        kick.steps[patId][10] = { active: true, velocity: 0.95 };
+        kick.steps[patId][13] = { active: true, velocity: 0.85 };
+      }
+      // UK/NY Drill signature: snare on the 3rd beat (step 6 and 14)
+      if (snare) [6, 14].forEach((s) => (snare.steps[patId][s] = { active: true, velocity: 1.0 }));
+      if (clap) [6, 14].forEach((s) => (clap.steps[patId][s] = { active: true, velocity: 0.6 }));
+      if (openHat) [8].forEach((s) => (openHat.steps[patId][s] = { active: true, velocity: 0.85 }));
+      if (hat) {
+        [0, 3, 6, 8, 9, 11, 12, 14].forEach((s) => {
+          const pitch = s === 9 ? -3 : s === 12 ? 2 : 0;
+          hat.steps[patId][s] = { active: true, velocity: s === 0 || s === 8 ? 0.95 : 0.75, pitchOffset: pitch };
+        });
+      }
+      if (sub) {
+        sub.steps[patId][0] = { active: true, velocity: 1.0, pitchOffset: 0 };
+        sub.steps[patId][3] = { active: true, velocity: 0.9, pitchOffset: 5 }; // slide up
+        sub.steps[patId][8] = { active: true, velocity: 0.95, pitchOffset: 0 };
+        sub.steps[patId][11] = { active: true, velocity: 0.85, pitchOffset: -3 }; // slide down
+      }
+    } else if (style === 'boomBap') {
+      this.setBpm(90);
+      this.setSwing(28); // Real 90s MPC swing
+      if (kick) {
+        kick.steps[patId][0] = { active: true, velocity: 1.0 };
+        kick.steps[patId][6] = { active: true, velocity: 0.88 };
+        kick.steps[patId][10] = { active: true, velocity: 0.95 };
+      }
+      if (snare) [4, 12].forEach((s) => (snare.steps[patId][s] = { active: true, velocity: 1.0 }));
+      if (openHat) [14].forEach((s) => (openHat.steps[patId][s] = { active: true, velocity: 0.75 }));
+      if (hat) {
+        const velMap = [0.9, 0.5, 0.8, 0.55, 0.9, 0.5, 0.85, 0.65, 0.9, 0.5, 0.8, 0.55, 0.9, 0.5, 0.85, 0.6];
+        for (let i = 0; i < 16; i++) {
+          hat.steps[patId][i] = { active: true, velocity: velMap[i] };
+        }
+      }
+      if (sub) {
+        sub.steps[patId][0] = { active: true, velocity: 0.95, pitchOffset: 0 };
+        sub.steps[patId][6] = { active: true, velocity: 0.85, pitchOffset: 0 };
+        sub.steps[patId][10] = { active: true, velocity: 0.9, pitchOffset: 5 };
+      }
+    } else if (style === 'synthwave') {
+      this.setBpm(124);
+      this.setSwing(0);
+      if (kick) [0, 4, 8, 12].forEach((s) => (kick.steps[patId][s] = { active: true, velocity: 1.0 }));
+      if (snare) [4, 12].forEach((s) => (snare.steps[patId][s] = { active: true, velocity: 1.0 }));
+      if (clap) [4, 12].forEach((s) => (clap.steps[patId][s] = { active: true, velocity: 0.75 }));
+      if (openHat) [2, 6, 10, 14].forEach((s) => (openHat.steps[patId][s] = { active: true, velocity: 0.85 }));
+      if (hat) {
+        for (let i = 0; i < 16; i++) {
+          hat.steps[patId][i] = { active: true, velocity: i % 2 === 0 ? 0.85 : 0.6 };
+        }
+      }
+      if (sub) {
+        // Driving 16th rolling synth bass
+        for (let i = 0; i < 16; i++) {
+          sub.steps[patId][i] = { active: true, velocity: i % 4 === 0 ? 0.95 : 0.75, pitchOffset: i >= 8 ? -2 : 0 };
+        }
+      }
+    } else if (style === 'house') {
+      this.setBpm(126);
+      this.setSwing(0);
+      if (kick) [0, 4, 8, 12].forEach((s) => (kick.steps[patId][s] = { active: true, velocity: 1.0 }));
+      if (clap) [4, 12].forEach((s) => (clap.steps[patId][s] = { active: true, velocity: 1.0 }));
+      if (openHat) [2, 6, 10, 14].forEach((s) => (openHat.steps[patId][s] = { active: true, velocity: 0.95 }));
+      if (hat) {
+        [0, 4, 8, 12].forEach((s) => (hat.steps[patId][s] = { active: true, velocity: 0.6 }));
+      }
+      if (sub) {
+        [2, 6, 10, 14].forEach((s) => (sub.steps[patId][s] = { active: true, velocity: 0.9, pitchOffset: 0 }));
+      }
+    } else if (style === 'phonk') {
+      this.setBpm(155);
+      this.setSwing(0);
+      if (kick) [0, 3, 6, 10, 12].forEach((s) => (kick.steps[patId][s] = { active: true, velocity: 1.0 }));
+      if (snare) [4, 12].forEach((s) => (snare.steps[patId][s] = { active: true, velocity: 1.0 }));
+      if (clap) [4, 12].forEach((s) => (clap.steps[patId][s] = { active: true, velocity: 0.8 }));
+      if (openHat) [2, 10].forEach((s) => (openHat.steps[patId][s] = { active: true, velocity: 0.9 }));
+      if (hat) {
+        for (let i = 0; i < 16; i++) {
+          const pitch = i >= 13 ? (i - 13) * 3 : 0;
+          hat.steps[patId][i] = { active: true, velocity: i >= 12 ? 0.95 : 0.8, pitchOffset: pitch };
+        }
+      }
+      if (sub) {
+        sub.steps[patId][0] = { active: true, velocity: 1.0, pitchOffset: 0 };
+        sub.steps[patId][3] = { active: true, velocity: 0.9, pitchOffset: 3 };
+        sub.steps[patId][6] = { active: true, velocity: 1.0, pitchOffset: 0 };
+        sub.steps[patId][10] = { active: true, velocity: 0.95, pitchOffset: 5 };
+        sub.steps[patId][12] = { active: true, velocity: 0.9, pitchOffset: -2 };
+      }
     }
 
     this.syncAudioEngineData();
@@ -1070,7 +1215,7 @@ class Store {
     this.saveToStorage();
   }
 
-  // Randomize melody strictly locked to selected musical scale!
+  // Musical Phrased Melody Randomizer (Call & Response in scale)
   public randomizeMelody() {
     const pat = this.state.patterns.find((p) => p.id === this.state.selectedPatternId);
     if (!pat) return;
@@ -1080,24 +1225,42 @@ class Store {
     const rootMidi = 60 + rootIndex; // C4 base
 
     const newNotes: PianoNote[] = [];
-    // Pick 6-8 rhythmic steps
-    const stepChoices = [0, 2, 4, 6, 8, 10, 12, 14];
-    stepChoices.forEach((step) => {
-      if (Math.random() > 0.3) {
-        const randInterval = intervals[Math.floor(Math.random() * intervals.length)];
-        const octaveOffset = Math.random() > 0.5 ? 0 : 12;
-        newNotes.push({
-          id: `rand-${step}-${Date.now()}`,
-          trackId: 't-synth',
-          midiNote: rootMidi + randInterval + octaveOffset,
-          startStep: step,
-          durationSteps: Math.random() > 0.5 ? 2 : 1,
-          velocity: 0.7 + Math.random() * 0.25,
-        });
-      }
+
+    // Musical phrase structure: motif in steps 0-7, variation/answer in 8-15
+    const phrasePattern = [
+      { step: 0, dur: 2, scaleDeg: 4 }, // 5th
+      { step: 3, dur: 1, scaleDeg: 2 }, // 3rd
+      { step: 4, dur: 3, scaleDeg: 0 }, // Root
+      { step: 8, dur: 2, scaleDeg: 4 }, // 5th
+      { step: 11, dur: 1, scaleDeg: 5 }, // 6th/7th
+      { step: 12, dur: 2, scaleDeg: 2 }, // 3rd
+      { step: 14, dur: 2, scaleDeg: 1 }, // 2nd
+    ];
+
+    phrasePattern.forEach((item) => {
+      const interval = intervals[item.scaleDeg % intervals.length] || 0;
+      newNotes.push({
+        id: `mel-${item.step}-${Date.now()}`,
+        trackId: 't-synth',
+        midiNote: rootMidi + interval + (item.scaleDeg > 4 ? 12 : 0),
+        startStep: item.step,
+        durationSteps: item.dur,
+        velocity: 0.78 + Math.random() * 0.15,
+      });
     });
 
     pat.notes = newNotes;
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public resetToProDemo() {
+    this.state.tracks = createInitialTracks();
+    this.state.patterns = createInitialPatterns();
+    this.state.selectedPatternId = 'pat-1';
+    this.state.bpm = 140;
+    this.state.swing = 0;
     this.syncAudioEngineData();
     this.notify();
     this.saveToStorage();

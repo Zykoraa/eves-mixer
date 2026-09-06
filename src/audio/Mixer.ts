@@ -65,22 +65,36 @@ export class Mixer {
   public masterChannel: MixerChannelNode;
   public insertChannels: MixerChannelNode[] = [];
   public masterLimiter: DynamicsCompressorNode;
+  public masterSoftClipper: WaveShaperNode;
 
   constructor(ctx: AudioContext, destination: AudioNode) {
     this.ctx = ctx;
 
-    // Master Limiter to prevent clipping
+    // Modeled Fruity Soft Clipper (Analog hyperbolic saturation)
+    this.masterSoftClipper = ctx.createWaveShaper();
+    const clipSamples = 1024;
+    const clipCurve = new Float32Array(clipSamples);
+    for (let i = 0; i < clipSamples; i++) {
+      const x = (i * 2) / clipSamples - 1;
+      clipCurve[i] = Math.tanh(x * 1.35) / Math.tanh(1.35);
+    }
+    this.masterSoftClipper.curve = clipCurve as unknown as Float32Array<ArrayBuffer>;
+    this.masterSoftClipper.oversample = '2x';
+
+    // Master Safety Limiter with smooth transparent leveling (No harsh pumping)
     this.masterLimiter = ctx.createDynamicsCompressor();
-    this.masterLimiter.threshold.setValueAtTime(-0.5, ctx.currentTime);
-    this.masterLimiter.knee.setValueAtTime(0, ctx.currentTime);
-    this.masterLimiter.ratio.setValueAtTime(20, ctx.currentTime);
-    this.masterLimiter.attack.setValueAtTime(0.001, ctx.currentTime);
-    this.masterLimiter.release.setValueAtTime(0.05, ctx.currentTime);
+    this.masterLimiter.threshold.setValueAtTime(-0.2, ctx.currentTime);
+    this.masterLimiter.knee.setValueAtTime(6.0, ctx.currentTime);
+    this.masterLimiter.ratio.setValueAtTime(10, ctx.currentTime);
+    this.masterLimiter.attack.setValueAtTime(0.005, ctx.currentTime);
+    this.masterLimiter.release.setValueAtTime(0.12, ctx.currentTime);
+
+    this.masterSoftClipper.connect(this.masterLimiter);
     this.masterLimiter.connect(destination);
 
     // Master Channel (Index 0)
     this.masterChannel = new MixerChannelNode(ctx, 0);
-    this.masterChannel.analyserNode.connect(this.masterLimiter);
+    this.masterChannel.analyserNode.connect(this.masterSoftClipper);
 
     // 8 Insert Channels (Index 1 to 8)
     for (let i = 1; i <= 8; i++) {

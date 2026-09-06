@@ -10,6 +10,7 @@ import {
   Sparkles,
   Play,
   Compass,
+  RotateCcw,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { ChannelTrack } from '../types/daw';
@@ -143,34 +144,56 @@ export const ChannelRack: React.FC = () => {
         </div>
 
         {/* Quick Drum Generator Shortcuts */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <button
             onClick={() => store.applyDrumPreset('trap')}
-            className="px-2 py-1 text-[11px] font-mono rounded bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 transition-all flex items-center gap-1"
+            className="px-2 py-1 text-[11px] font-mono rounded bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 transition-all flex items-center gap-1"
           >
             <Sparkles size={12} />
-            Trap Beat
+            Trap
           </button>
           <button
-            onClick={() => store.applyDrumPreset('house')}
-            className="px-2 py-1 text-[11px] font-mono rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 transition-all flex items-center gap-1"
+            onClick={() => store.applyDrumPreset('drill')}
+            className="px-2 py-1 text-[11px] font-mono rounded bg-yellow-500/15 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/30 transition-all flex items-center gap-1"
           >
             <Sparkles size={12} />
-            House 4/4
+            Drill
           </button>
           <button
             onClick={() => store.applyDrumPreset('boomBap')}
-            className="px-2 py-1 text-[11px] font-mono rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 transition-all flex items-center gap-1"
+            className="px-2 py-1 text-[11px] font-mono rounded bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 border border-purple-500/30 transition-all flex items-center gap-1"
           >
             <Sparkles size={12} />
             Boom Bap
           </button>
           <button
-            onClick={() => store.applyDrumPreset('drill')}
-            className="px-2 py-1 text-[11px] font-mono rounded bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 transition-all flex items-center gap-1"
+            onClick={() => store.applyDrumPreset('synthwave')}
+            className="px-2 py-1 text-[11px] font-mono rounded bg-pink-500/15 hover:bg-pink-500/25 text-pink-400 border border-pink-500/30 transition-all flex items-center gap-1"
           >
             <Sparkles size={12} />
-            UK Drill
+            Synthwave
+          </button>
+          <button
+            onClick={() => store.applyDrumPreset('house')}
+            className="px-2 py-1 text-[11px] font-mono rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/30 transition-all flex items-center gap-1"
+          >
+            <Sparkles size={12} />
+            House 4/4
+          </button>
+          <button
+            onClick={() => store.applyDrumPreset('phonk')}
+            className="px-2 py-1 text-[11px] font-mono rounded bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 transition-all flex items-center gap-1"
+          >
+            <Sparkles size={12} />
+            Phonk
+          </button>
+          <button
+            onClick={() => store.resetToProDemo()}
+            title="Reload high-quality default pro trap beat"
+            className="px-2 py-1 text-[11px] font-mono rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-600 transition-all flex items-center gap-1 ml-auto"
+          >
+            <RotateCcw size={11} />
+            Reset Pro Beat
           </button>
         </div>
       </div>

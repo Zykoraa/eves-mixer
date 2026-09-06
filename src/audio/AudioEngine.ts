@@ -252,7 +252,8 @@ export class AudioEngine {
             stepData.velocity * track.volume,
             mixerChan.inputNode,
             track.customAudioUrl,
-            track.drumKitId || 'trap'
+            track.drumKitId || 'trap',
+            stepData.pitchOffset || 0
           );
         } else if (track.type === 'instrument' && track.instrumentId) {
           const basePitch = 60 + (stepData.pitchOffset || 0);
@@ -263,10 +264,8 @@ export class AudioEngine {
             time,
             mixerChan.inputNode
           );
-          const durSeconds = (60 / this.bpm / 4) * 1.5;
-          setTimeout(() => {
-            this.instrumentEngine.noteOff(track.instrumentId!, basePitch, time + durSeconds);
-          }, durSeconds * 1000);
+          const durSeconds = (60 / this.bpm / 4) * 0.95;
+          this.instrumentEngine.noteOff(track.instrumentId, basePitch, time + durSeconds);
         } else if (track.type === 'sampler' && track.customAudioUrl) {
           this.drumSynth.trigger(
             'kick',
@@ -274,16 +273,15 @@ export class AudioEngine {
             stepData.velocity * track.volume,
             mixerChan.inputNode,
             track.customAudioUrl,
-            track.drumKitId || 'trap'
+            track.drumKitId || 'trap',
+            stepData.pitchOffset || 0
           );
         } else if (track.type === 'synth' && this.synthParams) {
           // Play base note for step sequencer (e.g. C3 = 48)
           const basePitch = 48 + (stepData.pitchOffset || 0);
           this.synthEngine.noteOn(basePitch, stepData.velocity * track.volume, time, this.synthParams, mixerChan.inputNode);
-          const durSeconds = (60 / this.bpm / 4) * 1.5;
-          setTimeout(() => {
-            this.synthEngine.noteOff(basePitch, time + durSeconds, this.synthParams!);
-          }, durSeconds * 1000);
+          const durSeconds = (60 / this.bpm / 4) * 0.95;
+          this.synthEngine.noteOff(basePitch, time + durSeconds, this.synthParams);
         }
       }
     }
@@ -299,15 +297,11 @@ export class AudioEngine {
           if (track.type === 'synth' && this.synthParams) {
             this.synthEngine.noteOn(note.midiNote, note.velocity * track.volume, time, this.synthParams, mixerChan.inputNode);
             const durSeconds = (note.durationSteps * 60) / this.bpm / 4;
-            setTimeout(() => {
-              this.synthEngine.noteOff(note.midiNote, time + durSeconds, this.synthParams!);
-            }, durSeconds * 1000);
+            this.synthEngine.noteOff(note.midiNote, time + durSeconds, this.synthParams);
           } else if (track.type === 'instrument' && track.instrumentId) {
-            this.instrumentEngine.noteOn(note.trackId && track.instrumentId, note.midiNote, note.velocity * track.volume, time, mixerChan.inputNode);
+            this.instrumentEngine.noteOn(track.instrumentId, note.midiNote, note.velocity * track.volume, time, mixerChan.inputNode);
             const durSeconds = (note.durationSteps * 60) / this.bpm / 4;
-            setTimeout(() => {
-              this.instrumentEngine.noteOff(track.instrumentId!, note.midiNote, time + durSeconds);
-            }, durSeconds * 1000);
+            this.instrumentEngine.noteOff(track.instrumentId, note.midiNote, time + durSeconds);
           }
         }
       }

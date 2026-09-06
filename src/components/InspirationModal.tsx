@@ -98,7 +98,7 @@ export const InspirationModal: React.FC<InspirationModalProps> = ({ isOpen, onCl
               <Flame size={15} />
               <span>Instant Beat & Groove Templates</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               <button
                 onClick={() => {
                   store.applyDrumPreset('trap');
@@ -106,30 +106,8 @@ export const InspirationModal: React.FC<InspirationModalProps> = ({ isOpen, onCl
                 }}
                 className="p-3 rounded-lg bg-[#12141c] hover:bg-[#222536] border border-[#2c3042] text-left hover:border-orange-500/60 transition-all"
               >
-                <div className="text-xs font-bold text-orange-400 mb-1">Trap Bounce</div>
-                <div className="text-[10px] text-gray-400">140 BPM • Rolling Hi-Hats & 808</div>
-              </button>
-
-              <button
-                onClick={() => {
-                  store.applyDrumPreset('house');
-                  onClose();
-                }}
-                className="p-3 rounded-lg bg-[#12141c] hover:bg-[#222536] border border-[#2c3042] text-left hover:border-sky-500/60 transition-all"
-              >
-                <div className="text-xs font-bold text-sky-400 mb-1">4-on-the-Floor</div>
-                <div className="text-[10px] text-gray-400">126 BPM • Driving House Rhythm</div>
-              </button>
-
-              <button
-                onClick={() => {
-                  store.applyDrumPreset('boomBap');
-                  onClose();
-                }}
-                className="p-3 rounded-lg bg-[#12141c] hover:bg-[#222536] border border-[#2c3042] text-left hover:border-purple-500/60 transition-all"
-              >
-                <div className="text-xs font-bold text-purple-400 mb-1">Lo-Fi Boom Bap</div>
-                <div className="text-[10px] text-gray-400">92 BPM • 25% Swing Swag</div>
+                <div className="text-xs font-bold text-orange-400 mb-1">Trap Banger</div>
+                <div className="text-[10px] text-gray-400">140 BPM • Rolling 32nd Hats & 808</div>
               </button>
 
               <button
@@ -139,8 +117,52 @@ export const InspirationModal: React.FC<InspirationModalProps> = ({ isOpen, onCl
                 }}
                 className="p-3 rounded-lg bg-[#12141c] hover:bg-[#222536] border border-[#2c3042] text-left hover:border-yellow-500/60 transition-all"
               >
-                <div className="text-xs font-bold text-yellow-400 mb-1">UK Drill</div>
-                <div className="text-[10px] text-gray-400">142 BPM • Syncopated Snare Hit</div>
+                <div className="text-xs font-bold text-yellow-400 mb-1">UK/NY Drill</div>
+                <div className="text-[10px] text-gray-400">142 BPM • Sliding 808s & 3rd-Beat Snare</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  store.applyDrumPreset('boomBap');
+                  onClose();
+                }}
+                className="p-3 rounded-lg bg-[#12141c] hover:bg-[#222536] border border-[#2c3042] text-left hover:border-purple-500/60 transition-all"
+              >
+                <div className="text-xs font-bold text-purple-400 mb-1">90s Boom Bap</div>
+                <div className="text-[10px] text-gray-400">90 BPM • 28% MPC Swing & Vinyl Pocket</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  store.applyDrumPreset('synthwave');
+                  onClose();
+                }}
+                className="p-3 rounded-lg bg-[#12141c] hover:bg-[#222536] border border-[#2c3042] text-left hover:border-pink-500/60 transition-all"
+              >
+                <div className="text-xs font-bold text-pink-400 mb-1">Synthwave Drive</div>
+                <div className="text-[10px] text-gray-400">124 BPM • Gated Reverb Snare & 16th Bass</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  store.applyDrumPreset('house');
+                  onClose();
+                }}
+                className="p-3 rounded-lg bg-[#12141c] hover:bg-[#222536] border border-[#2c3042] text-left hover:border-sky-500/60 transition-all"
+              >
+                <div className="text-xs font-bold text-sky-400 mb-1">Club House 4/4</div>
+                <div className="text-[10px] text-gray-400">126 BPM • Pumping 909 & Offbeat Hat</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  store.applyDrumPreset('phonk');
+                  onClose();
+                }}
+                className="p-3 rounded-lg bg-[#12141c] hover:bg-[#222536] border border-[#2c3042] text-left hover:border-red-500/60 transition-all"
+              >
+                <div className="text-xs font-bold text-red-400 mb-1">Drift Phonk</div>
+                <div className="text-[10px] text-gray-400">155 BPM • Distorted 808 & Hyper Hats</div>
               </button>
             </div>
           </div>

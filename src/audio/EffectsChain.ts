@@ -11,8 +11,8 @@ export class EffectsChain {
   // Distortion
   private distInput: GainNode;
   private distShaper: WaveShaperNode;
-  private distDryGain: GainNode;
-  private distWetGain: GainNode;
+  public distDryGain: GainNode;
+  public distWetGain: GainNode;
   private distOutput: GainNode;
 
   // Compressor
@@ -25,8 +25,8 @@ export class EffectsChain {
   private chorusDelayR: DelayNode;
   private chorusLfo: OscillatorNode;
   private chorusLfoGain: GainNode;
-  private chorusDry: GainNode;
-  private chorusWet: GainNode;
+  public chorusDry: GainNode;
+  public chorusWet: GainNode;
   private chorusOutput: GainNode;
 
   // Delay
@@ -36,19 +36,19 @@ export class EffectsChain {
   private delayFeedbackL: GainNode;
   private delayFeedbackR: GainNode;
   private delayFilter: BiquadFilterNode;
-  private delayDry: GainNode;
-  private delayWet: GainNode;
+  public delayDry: GainNode;
+  public delayWet: GainNode;
   private delayOutput: GainNode;
 
   // Reverb
   private reverbInput: GainNode;
-  private reverbConvolver: ConvolverNode;
-  private reverbDry: GainNode;
-  private reverbWet: GainNode;
+  public reverbConvolver: ConvolverNode;
+  public reverbDry: GainNode;
+  public reverbWet: GainNode;
   private reverbOutput: GainNode;
 
   // Filter
-  private resFilter: BiquadFilterNode;
+  public resFilter: BiquadFilterNode;
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
@@ -352,5 +352,9 @@ export class EffectsChain {
     this.compressor.release.setTargetAtTime(release, now, 0.05);
     const linearMakeup = Math.pow(10, makeup / 20);
     this.compressorMakeup.gain.setTargetAtTime(linearMakeup, now, 0.05);
+  }
+
+  public setImpulseBuffer(buffer: AudioBuffer) {
+    this.reverbConvolver.buffer = buffer;
   }
 }

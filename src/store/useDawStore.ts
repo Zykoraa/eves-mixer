@@ -14,6 +14,15 @@ import {
   StepData,
   PianoNote,
   DrumKitId,
+  AutomationClip,
+  AutomationNode,
+  AutomationTarget,
+  SidechainRoute,
+  AudioSlice,
+  SlicexSession,
+  SpectralCollisionAlert,
+  MidiCcMapping,
+  ImpulseResponseMeta,
 } from '../types/daw';
 import {
   DEFAULT_SYNTH_PARAMS,
@@ -38,6 +47,12 @@ import {
   VstEngine,
 } from '../audio/VstEngine';
 import { MidiManager } from '../audio/MidiManager';
+import { SidechainManager } from '../audio/SidechainManager';
+import { TransientSlicer } from '../audio/TransientSlicer';
+import { ConvolutionEngine, FACTORY_IMPULSES } from '../audio/ConvolutionEngine';
+import { MixingDoctor } from '../audio/MixingDoctor';
+import { MidiLearnManager, MidiLearnTarget } from '../audio/MidiLearnManager';
+import { OfflineRenderer } from '../audio/OfflineRenderer';
 
 // Default initial tracks
 const CURRENT_STORAGE_VERSION = 'v2_pro_producer';
@@ -357,10 +372,57 @@ const createInitialPatterns = (): Pattern[] => [
   },
 ];
 
+const createInitialAutomationClips = (): AutomationClip[] => [
+  {
+    id: 'auto-synth-cutoff',
+    name: 'Eve Lead Filter Sweep',
+    color: '#ec4899',
+    trackIndex: 2,
+    startBar: 0,
+    lengthBars: 8,
+    target: {
+      type: 'synthCutoff',
+      label: 'Lead Cutoff Sweep',
+    },
+    nodes: [
+      { id: 'node-1', bar: 0, value: 0.25, tension: 0.4 },
+      { id: 'node-2', bar: 3.5, value: 0.95, tension: -0.3 },
+      { id: 'node-3', bar: 4.0, value: 0.35, tension: 0.2 },
+      { id: 'node-4', bar: 7.5, value: 1.0, tension: 0.0 },
+    ],
+  },
+];
+
+const createInitialSidechainRoutes = (): SidechainRoute[] => [
+  {
+    id: 'sc-kick-808',
+    enabled: true,
+    name: 'Kick -> 808 Sub Ducking',
+    sourceChannelIndex: 1,
+    targetChannelIndex: 3,
+    thresholdDb: -16,
+    duckingDepthDb: 14,
+    attackMs: 2.0,
+    releaseMs: 140,
+    mode: 'lowShelf',
+  },
+];
+
+const createInitialSlicexSession = (): SlicexSession => ({
+  audioBuffer: null,
+  fileName: 'Eve_Trap_Breakbeat_130bpm.wav',
+  slices: [],
+  selectedSliceId: null,
+  sensitivity: 55,
+  bpm: 130,
+  bars: 2,
+});
+
 const createInitialClips = (): PlaylistClip[] => [
   { id: 'clip-1', trackIndex: 0, patternId: 'pat-1', name: 'Main Groove', startBar: 0, lengthBars: 4, color: '#ff763b', type: 'pattern' },
   { id: 'clip-2', trackIndex: 1, patternId: 'pat-2', name: 'Chords Layer', startBar: 2, lengthBars: 6, color: '#38bdf8', type: 'pattern' },
   { id: 'clip-3', trackIndex: 0, patternId: 'pat-1', name: 'Main Groove (Hook)', startBar: 4, lengthBars: 4, color: '#ff763b', type: 'pattern' },
+  { id: 'clip-auto-1', trackIndex: 2, automationClipId: 'auto-synth-cutoff', name: 'Eve Lead Filter Sweep', startBar: 0, lengthBars: 8, color: '#ec4899', type: 'automation' },
 ];
 
 const createInitialMixerChannels = (): MixerChannel[] => [
@@ -491,6 +553,26 @@ export interface DawStoreState {
   selectedVstSlotIndex: number;
   connectedMidiOutputs: string[];
   selectedMidiOutput: string;
+
+  // 1. Automation & Modulation
+  automationClips: AutomationClip[];
+
+  // 2. Sidechain Ducking
+  sidechainRoutes: SidechainRoute[];
+
+  // 3. Intelligent Beat Slicer (Slicex)
+  slicexSession: SlicexSession;
+
+  // 4. AI Mixing Doctor
+  spectralAlerts: SpectralCollisionAlert[];
+
+  // 5. Hardware MIDI Learn
+  midiMappings: MidiCcMapping[];
+  isMidiLearning: boolean;
+  learningTarget: MidiLearnTarget | null;
+
+  // 6. Impulse Responses
+  impulseResponses: ImpulseResponseMeta[];
 }
 
 class Store {
@@ -608,7 +690,42 @@ class Store {
       selectedVstSlotIndex: 0,
       connectedMidiOutputs: [],
       selectedMidiOutput: '',
+
+      // 1. Automation & Modulation
+      automationClips: initialState.automationClips || createInitialAutomationClips(),
+
+      // 2. Sidechain Ducking
+      sidechainRoutes: initialState.sidechainRoutes || createInitialSidechainRoutes(),
+
+      // 3. Intelligent Beat Slicer (Slicex)
+      slicexSession: initialState.slicexSession || createInitialSlicexSession(),
+
+      // 4. AI Mixing Doctor
+      spectralAlerts: [],
+
+      // 5. Hardware MIDI Learn
+      midiMappings: MidiLearnManager.getInstance().getMappings(),
+      isMidiLearning: false,
+      learningTarget: null,
+
+      // 6. Impulse Responses
+      impulseResponses: FACTORY_IMPULSES,
     };
+
+    // Connect MIDI Learn listeners
+    const midiLearn = MidiLearnManager.getInstance();
+    midiLearn.onLearnStatus((isLearning, target) => {
+      this.state.isMidiLearning = isLearning;
+      this.state.learningTarget = target;
+      this.notify();
+    });
+    midiLearn.onMappingsChange((mappings) => {
+      this.state.midiMappings = mappings;
+      this.notify();
+    });
+    midiLearn.onParameterChange((mapping, val) => {
+      this.handleMidiCcParameterChange(mapping, val);
+    });
 
     // Connect AudioEngine events
     this.audioEngine.setBpm(this.state.bpm);
@@ -652,8 +769,10 @@ class Store {
       curPattern,
       this.state.patterns,
       this.state.clips,
-      this.state.synthParams
+      this.state.synthParams,
+      this.state.automationClips
     );
+    this.audioEngine.sidechainManager.setRoutes(this.state.sidechainRoutes);
   }
 
   public saveToStorage() {
@@ -1473,6 +1592,384 @@ class Store {
 
   public sendMidiOut(note: number, velocity: number = 0.8, channel: number = 0) {
     MidiManager.getInstance().sendNoteOn(note, velocity, channel, this.state.selectedMidiOutput || undefined);
+  }
+
+  // =========================================================================
+  // 1. AUTOMATION ACTIONS
+  // =========================================================================
+  public addAutomationClip(clipData: Omit<AutomationClip, 'id'>): AutomationClip {
+    const newId = `auto_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newClip: AutomationClip = {
+      ...clipData,
+      id: newId,
+    };
+    this.state.automationClips.push(newClip);
+
+    // Also add to playlist clips so it renders on the playlist timeline
+    this.state.clips.push({
+      id: `pl_clip_${newId}`,
+      trackIndex: newClip.trackIndex,
+      automationClipId: newId,
+      name: newClip.name,
+      startBar: newClip.startBar,
+      lengthBars: newClip.lengthBars,
+      color: newClip.color,
+      type: 'automation',
+    });
+
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+    return newClip;
+  }
+
+  public removeAutomationClip(id: string) {
+    this.state.automationClips = this.state.automationClips.filter((c) => c.id !== id);
+    this.state.clips = this.state.clips.filter((c) => c.automationClipId !== id);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public updateAutomationClip(id: string, updates: Partial<AutomationClip>) {
+    const clip = this.state.automationClips.find((c) => c.id === id);
+    if (!clip) return;
+    Object.assign(clip, updates);
+
+    const plClip = this.state.clips.find((c) => c.automationClipId === id);
+    if (plClip) {
+      if (updates.name !== undefined) plClip.name = updates.name;
+      if (updates.color !== undefined) plClip.color = updates.color;
+      if (updates.startBar !== undefined) plClip.startBar = updates.startBar;
+      if (updates.lengthBars !== undefined) plClip.lengthBars = updates.lengthBars;
+      if (updates.trackIndex !== undefined) plClip.trackIndex = updates.trackIndex;
+    }
+
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public addAutomationNode(clipId: string, bar: number, value: number, tension: number = 0): AutomationNode {
+    const clip = this.state.automationClips.find((c) => c.id === clipId);
+    const newNode: AutomationNode = {
+      id: `node_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      bar,
+      value: Math.max(0, Math.min(1, value)),
+      tension: Math.max(-1, Math.min(1, tension)),
+    };
+    if (clip) {
+      clip.nodes.push(newNode);
+      clip.nodes.sort((a, b) => a.bar - b.bar);
+      this.syncAudioEngineData();
+      this.notify();
+      this.saveToStorage();
+    }
+    return newNode;
+  }
+
+  public updateAutomationNode(clipId: string, nodeId: string, updates: Partial<AutomationNode>) {
+    const clip = this.state.automationClips.find((c) => c.id === clipId);
+    if (!clip) return;
+    const node = clip.nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    if (updates.bar !== undefined) node.bar = Math.max(0, updates.bar);
+    if (updates.value !== undefined) node.value = Math.max(0, Math.min(1, updates.value));
+    if (updates.tension !== undefined) node.tension = Math.max(-1, Math.min(1, updates.tension));
+    clip.nodes.sort((a, b) => a.bar - b.bar);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public removeAutomationNode(clipId: string, nodeId: string) {
+    const clip = this.state.automationClips.find((c) => c.id === clipId);
+    if (!clip || clip.nodes.length <= 1) return;
+    clip.nodes = clip.nodes.filter((n) => n.id !== nodeId);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  // =========================================================================
+  // 2. SIDECHAIN DUCKING ACTIONS
+  // =========================================================================
+  public addSidechainRoute(routeData: Omit<SidechainRoute, 'id'>): SidechainRoute {
+    const newRoute: SidechainRoute = {
+      ...routeData,
+      id: `sc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    };
+    this.state.sidechainRoutes.push(newRoute);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+    return newRoute;
+  }
+
+  public updateSidechainRoute(id: string, updates: Partial<SidechainRoute>) {
+    const route = this.state.sidechainRoutes.find((r) => r.id === id);
+    if (!route) return;
+    Object.assign(route, updates);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public removeSidechainRoute(id: string) {
+    this.state.sidechainRoutes = this.state.sidechainRoutes.filter((r) => r.id !== id);
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  // =========================================================================
+  // 3. INTELLIGENT TRANSIENT SLICER (SLICEX) ACTIONS
+  // =========================================================================
+  public async loadSlicexDemo() {
+    await this.audioEngine.resumeContext();
+    const demoBuffer = TransientSlicer.createDemoBreakbeat(this.audioEngine.ctx);
+    const slices = TransientSlicer.detectSlices(demoBuffer, this.state.slicexSession.sensitivity, 2, 130);
+    this.state.slicexSession = {
+      audioBuffer: demoBuffer,
+      fileName: 'Eve_Trap_Breakbeat_130bpm.wav',
+      slices,
+      selectedSliceId: slices[0]?.id || null,
+      sensitivity: this.state.slicexSession.sensitivity,
+      bpm: 130,
+      bars: 2,
+    };
+    this.notify();
+  }
+
+  public async loadSlicexFile(file: File) {
+    await this.audioEngine.resumeContext();
+    const arrayBuffer = await file.arrayBuffer();
+    const decoded = await this.audioEngine.ctx.decodeAudioData(arrayBuffer.slice(0));
+    const slices = TransientSlicer.detectSlices(decoded, this.state.slicexSession.sensitivity, 2, this.state.bpm);
+    this.state.slicexSession = {
+      audioBuffer: decoded,
+      fileName: file.name,
+      slices,
+      selectedSliceId: slices[0]?.id || null,
+      sensitivity: this.state.slicexSession.sensitivity,
+      bpm: this.state.bpm,
+      bars: Math.max(1, Math.round(decoded.duration / ((60 / this.state.bpm) * 4))),
+    };
+    this.notify();
+  }
+
+  public setSlicexSensitivity(sens: number) {
+    const clamped = Math.max(0, Math.min(100, sens));
+    this.state.slicexSession.sensitivity = clamped;
+    if (this.state.slicexSession.audioBuffer) {
+      const slices = TransientSlicer.detectSlices(
+        this.state.slicexSession.audioBuffer,
+        clamped,
+        this.state.slicexSession.bars,
+        this.state.slicexSession.bpm
+      );
+      this.state.slicexSession.slices = slices;
+      if (!slices.some((s) => s.id === this.state.slicexSession.selectedSliceId)) {
+        this.state.slicexSession.selectedSliceId = slices[0]?.id || null;
+      }
+    }
+    this.notify();
+  }
+
+  public selectSlicexSlice(sliceId: string | null) {
+    this.state.slicexSession.selectedSliceId = sliceId;
+    this.notify();
+  }
+
+  public auditionSlicexSlice(slice: AudioSlice) {
+    if (!this.state.slicexSession.audioBuffer) return;
+    this.audioEngine.resumeContext();
+    TransientSlicer.auditionSlice(this.state.slicexSession.audioBuffer, slice, this.audioEngine.ctx);
+  }
+
+  public dumpSlicexToChannelRack(mode: 'chromatic' | 'kit' = 'kit') {
+    const session = this.state.slicexSession;
+    if (!session.audioBuffer || session.slices.length === 0) return;
+
+    if (mode === 'kit') {
+      const newTracks: ChannelTrack[] = session.slices.slice(0, 8).map((slice, idx) => {
+        const sliceBuffer = TransientSlicer.extractSliceBuffer(session.audioBuffer!, slice, this.audioEngine.ctx);
+        const url = URL.createObjectURL(OfflineRenderer.audioBufferToWav(sliceBuffer, 16));
+        return {
+          id: `t_slice_${Date.now()}_${idx}`,
+          name: `Slice ${idx + 1} (${(slice.duration * 1000).toFixed(0)}ms)`,
+          type: 'drum',
+          soundId: 'kick',
+          customAudioUrl: url,
+          color: slice.color,
+          volume: 0.9,
+          pan: 0,
+          mute: false,
+          solo: false,
+          mixerChannelIndex: 1,
+          steps: {
+            'pat-1': Array.from({ length: 16 }, (_, stepIdx) => ({
+              active: stepIdx === idx * 2,
+              velocity: 0.85,
+            })),
+          },
+        };
+      });
+
+      this.state.tracks.push(...newTracks);
+    } else {
+      const pat = this.state.patterns.find((p) => p.id === this.state.selectedPatternId);
+      if (pat) {
+        pat.notes = pat.notes || [];
+        session.slices.slice(0, 16).forEach((slice, idx) => {
+          pat.notes!.push({
+            id: `snote_${Date.now()}_${idx}`,
+            trackId: this.state.selectedTrackId,
+            midiNote: 60 + idx,
+            startStep: idx,
+            durationSteps: 1,
+            velocity: 0.85,
+          });
+        });
+      }
+    }
+
+    this.syncAudioEngineData();
+    this.notify();
+    this.saveToStorage();
+  }
+
+  // =========================================================================
+  // 4. AI MIXING DOCTOR ACTIONS
+  // =========================================================================
+  public runDoctorDiagnostics() {
+    const { alerts } = MixingDoctor.getInstance().diagnoseMix(
+      this.audioEngine.mixer,
+      this.state.mixerChannels
+    );
+    this.state.spectralAlerts = alerts;
+    this.notify();
+    return alerts;
+  }
+
+  public autoFixCollision(alertId: string) {
+    const alert = this.state.spectralAlerts.find((a) => a.id === alertId);
+    if (!alert) return;
+
+    if (alert.suggestedAction === 'sidechain') {
+      const existing = this.state.sidechainRoutes.find(
+        (r) => r.sourceChannelIndex === alert.channelA && r.targetChannelIndex === alert.channelB
+      );
+      if (!existing) {
+        this.addSidechainRoute({
+          enabled: true,
+          name: `${alert.channelAName} -> ${alert.channelBName} Auto Ducking`,
+          sourceChannelIndex: alert.channelA,
+          targetChannelIndex: alert.channelB,
+          thresholdDb: -16,
+          duckingDepthDb: 14,
+          attackMs: 2.5,
+          releaseMs: 140,
+          mode: 'lowShelf',
+        });
+      }
+    } else if (alert.suggestedAction === 'notchEq') {
+      const ch = this.state.mixerChannels[alert.channelA];
+      if (ch) {
+        ch.effects.eqEnabled = true;
+        if (ch.effects.eqBands && ch.effects.eqBands[2]) {
+          ch.effects.eqBands[2].gain = -3.5;
+          ch.effects.eqBands[2].frequency = 250;
+          ch.effects.eqBands[2].q = 2.0;
+        }
+        this.audioEngine.mixer.getChannel(alert.channelA).updateEffects(ch.effects);
+      }
+    } else if (alert.suggestedAction === 'highpass') {
+      const ch = this.state.mixerChannels[alert.channelA];
+      if (ch) {
+        ch.effects.eqEnabled = true;
+        if (ch.effects.eqBands && ch.effects.eqBands[0]) {
+          ch.effects.eqBands[0].gain = 0;
+          ch.effects.eqBands[0].frequency = 110;
+        }
+        this.audioEngine.mixer.getChannel(alert.channelA).updateEffects(ch.effects);
+      }
+    }
+
+    this.state.spectralAlerts = this.state.spectralAlerts.filter((a) => a.id !== alertId);
+    this.notify();
+    this.saveToStorage();
+  }
+
+  // =========================================================================
+  // 5. HARDWARE MIDI LEARN ACTIONS
+  // =========================================================================
+  public startMidiLearn(target: MidiLearnTarget) {
+    MidiLearnManager.getInstance().startLearn(target);
+  }
+
+  public cancelMidiLearn() {
+    MidiLearnManager.getInstance().cancelLearn();
+  }
+
+  public removeMidiMapping(id: string) {
+    MidiLearnManager.getInstance().removeMapping(id);
+  }
+
+  public clearMidiMappings() {
+    MidiLearnManager.getInstance().clearAll();
+  }
+
+  public handleMidiCcParameterChange(mapping: MidiCcMapping, val: number) {
+    switch (mapping.targetType) {
+      case 'mixerVolume':
+        if (mapping.channelIndex !== undefined) {
+          this.updateMixerChannel(mapping.channelIndex, { volume: val });
+        }
+        break;
+      case 'mixerPan':
+        if (mapping.channelIndex !== undefined) {
+          this.updateMixerChannel(mapping.channelIndex, { pan: val });
+        }
+        break;
+      case 'mixerMute':
+        if (mapping.channelIndex !== undefined) {
+          const currentMute = this.state.mixerChannels[mapping.channelIndex]?.mute || false;
+          this.updateMixerChannel(mapping.channelIndex, { mute: !currentMute });
+        }
+        break;
+      case 'synthCutoff':
+        this.setSynthParams({ ...this.state.synthParams, filterCutoff: val });
+        break;
+      case 'tempo':
+        this.setBpm(Math.round(val));
+        break;
+      case 'vstParam':
+        if (mapping.channelIndex !== undefined && mapping.paramId) {
+          const inst = this.state.vstInstances.find((v) => v.channelIndex === mapping.channelIndex);
+          if (inst) {
+            this.setVstParam(mapping.channelIndex, inst.instanceId, mapping.paramId, val);
+          }
+        }
+        break;
+    }
+  }
+
+  // =========================================================================
+  // 6. IMPULSE RESPONSE ACTIONS
+  // =========================================================================
+  public async loadCustomImpulse(file: File) {
+    await this.audioEngine.resumeContext();
+    const meta = await ConvolutionEngine.getInstance().loadCustomImpulse(file, this.audioEngine.ctx);
+    this.state.impulseResponses = ConvolutionEngine.getInstance().getAvailableImpulses();
+    this.notify();
+    return meta;
+  }
+
+  public async applyCabinetImpulse(cabId: string) {
+    const buffer = await ConvolutionEngine.getInstance().getImpulseBuffer(cabId, this.audioEngine.ctx);
+    const guitarChan = this.audioEngine.mixer.getChannel(7);
+    guitarChan.effectsChain.setImpulseBuffer(buffer);
   }
 }
 

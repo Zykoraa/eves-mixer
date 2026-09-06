@@ -7,6 +7,8 @@ export class MixerChannelNode {
   public effectsChain: EffectsChain;
   public volumeNode: GainNode;
   public panNode: StereoPannerNode;
+  public sidechainGainNode: GainNode;
+  public sidechainShelfNode: BiquadFilterNode;
   public muteNode: GainNode;
   public analyserNode: AnalyserNode;
   private pcmData: Float32Array;
@@ -17,17 +19,24 @@ export class MixerChannelNode {
     this.effectsChain = new EffectsChain(ctx);
     this.volumeNode = ctx.createGain();
     this.panNode = ctx.createStereoPanner();
+    this.sidechainGainNode = ctx.createGain();
+    this.sidechainShelfNode = ctx.createBiquadFilter();
+    this.sidechainShelfNode.type = 'lowshelf';
+    this.sidechainShelfNode.frequency.setValueAtTime(130, ctx.currentTime);
+    this.sidechainShelfNode.gain.setValueAtTime(0, ctx.currentTime);
     this.muteNode = ctx.createGain();
     this.analyserNode = ctx.createAnalyser();
     this.analyserNode.fftSize = 256;
     this.analyserNode.smoothingTimeConstant = 0.8;
     this.pcmData = new Float32Array(this.analyserNode.frequencyBinCount);
 
-    // Flow: input -> effectsChain -> volume -> pan -> mute -> analyser
+    // Flow: input -> effectsChain -> volume -> pan -> sidechainGain -> sidechainShelf -> mute -> analyser
     this.inputNode.connect(this.effectsChain.inputNode);
     this.effectsChain.outputNode.connect(this.volumeNode);
     this.volumeNode.connect(this.panNode);
-    this.panNode.connect(this.muteNode);
+    this.panNode.connect(this.sidechainGainNode);
+    this.sidechainGainNode.connect(this.sidechainShelfNode);
+    this.sidechainShelfNode.connect(this.muteNode);
     this.muteNode.connect(this.analyserNode);
   }
 

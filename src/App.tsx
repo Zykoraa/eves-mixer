@@ -16,10 +16,13 @@ import { InspirationModal } from './components/InspirationModal';
 import { ExportModal } from './components/ExportModal';
 import { KeyboardShortcuts } from './components/KeyboardShortcuts';
 import { SearchModal } from './components/SearchModal';
+import { SlicexView } from './components/SlicexView';
+import { MixingDoctorView } from './components/MixingDoctorView';
+import { MidiLearnModal } from './components/MidiLearnModal';
 import { useDawStore } from './store/useDawStore';
 
 export const App: React.FC = () => {
-  const [state] = useDawStore();
+  const [state, store] = useDawStore();
   const [isInspirationOpen, setIsInspirationOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -67,7 +70,14 @@ export const App: React.FC = () => {
         {state.activeView === 'browser' && <SoundBrowser />}
         {state.activeView === 'guitarRig' && <GuitarRigView />}
         {state.activeView === 'vstPatchbay' && <VstPatchbay />}
+        {state.activeView === 'slicex' && <SlicexView />}
+        {state.activeView === 'mixingDoctor' && <MixingDoctorView />}
       </main>
+
+      <MidiLearnModal
+        isOpen={state.activeView === 'midiLearn'}
+        onClose={() => store.setActiveView('mixer')}
+      />
 
       {/* Wave Candy Master FFT Visualizer */}
       <VisualizerPanel />

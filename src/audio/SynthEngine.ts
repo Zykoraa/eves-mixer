@@ -13,10 +13,41 @@ export class SynthEngine {
   private voices: Map<number, ActiveVoice> = new Map();
   private lastMidiNote: number | null = null;
   private noiseBuffer: AudioBuffer | null = null;
+  private periodicWaveCache: Map<string, PeriodicWave> = new Map();
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
     this.generateNoiseBuffer();
+  }
+
+  private getAntiAliasedWave(type: 'sawtooth' | 'square' | 'triangle'): PeriodicWave {
+    if (this.periodicWaveCache.has(type)) {
+      return this.periodicWaveCache.get(type)!;
+    }
+    const numHarmonics = 64;
+    const real = new Float32Array(numHarmonics);
+    const imag = new Float32Array(numHarmonics);
+
+    for (let n = 1; n < numHarmonics; n++) {
+      // Lanczos sigma factor damping to eliminate Gibbs overshoot & aliasing
+      const sigma = Math.sin((Math.PI * n) / numHarmonics) / ((Math.PI * n) / numHarmonics);
+      if (type === 'sawtooth') {
+        imag[n] = (Math.pow(-1, n + 1) * (2 / (n * Math.PI))) * sigma;
+      } else if (type === 'square') {
+        if (n % 2 !== 0) {
+          imag[n] = (4 / (n * Math.PI)) * sigma;
+        }
+      } else if (type === 'triangle') {
+        if (n % 2 !== 0) {
+          const sign = ((n - 1) / 2) % 2 === 0 ? 1 : -1;
+          real[n] = (sign * 8 / (Math.PI * Math.PI * n * n)) * sigma;
+        }
+      }
+    }
+
+    const wave = this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+    this.periodicWaveCache.set(type, wave);
+    return wave;
   }
 
   private generateNoiseBuffer() {
@@ -108,7 +139,11 @@ export class SynthEngine {
 
     // --- OSC 1 ---
     const osc1 = this.ctx.createOscillator();
-    osc1.type = params.osc1Waveform;
+    if (params.osc1Waveform === 'sine') {
+      osc1.type = 'sine';
+    } else {
+      osc1.setPeriodicWave(this.getAntiAliasedWave(params.osc1Waveform));
+    }
     const osc1Freq = startFreq * Math.pow(2, params.osc1Octave);
     const targetFreq1 = freq * Math.pow(2, params.osc1Octave);
     osc1.frequency.setValueAtTime(osc1Freq, now);
@@ -139,7 +174,11 @@ export class SynthEngine {
       }
     } else {
       const osc2 = this.ctx.createOscillator();
-      osc2.type = params.osc2Waveform;
+      if (params.osc2Waveform === 'sine') {
+        osc2.type = 'sine';
+      } else {
+        osc2.setPeriodicWave(this.getAntiAliasedWave(params.osc2Waveform));
+      }
       const osc2Freq = startFreq * Math.pow(2, params.osc2Octave);
       const targetFreq2 = freq * Math.pow(2, params.osc2Octave);
       osc2.frequency.setValueAtTime(osc2Freq, now);

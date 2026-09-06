@@ -4,12 +4,14 @@ import {
   X,
   CheckCircle2,
   FileAudio,
+  Archive,
   Layers,
   Sparkles,
   Loader2,
+  Sliders,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
-import { WavExporter } from '../audio/WavExporter';
+import { OfflineRenderer } from '../audio/OfflineRenderer';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -18,31 +20,62 @@ interface ExportModalProps {
 
 export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
   const [state] = useDawStore();
+  const [exportMode, setExportMode] = useState<'master' | 'stems'>('stems');
+  const [bitDepth, setBitDepth] = useState<16 | 32>(16);
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [downloadReady, setDownloadReady] = useState<Blob | null>(null);
+  const [statusText, setStatusText] = useState('Ready');
+  const [downloadReady, setDownloadReady] = useState<{ blob: Blob; filename: string } | null>(null);
 
   if (!isOpen) return null;
 
   const handleStartExport = async () => {
     setIsExporting(true);
-    setProgress(10);
+    setProgress(5);
+    setStatusText('Preparing offline audio context...');
     setDownloadReady(null);
 
     try {
-      const blob = await WavExporter.exportSongToWav(
-        state.tracks,
-        state.patterns,
-        state.clips,
-        state.synthParams,
-        state.bpm,
-        state.totalBars,
-        (pct) => setProgress(pct)
-      );
+      if (exportMode === 'stems') {
+        const zipBlob = await OfflineRenderer.renderStemsToZip(
+          state.projectName,
+          state.tracks,
+          state.patterns,
+          state.clips,
+          state.synthParams,
+          state.bpm,
+          state.totalBars,
+          { bitDepth, includeMaster: true, normalize: false },
+          (pct, text) => {
+            setProgress(pct);
+            setStatusText(text);
+          }
+        );
 
-      setDownloadReady(blob);
+        const filename = `${state.projectName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-stems.zip`;
+        setDownloadReady({ blob: zipBlob, filename });
+      } else {
+        const wavBlob = await OfflineRenderer.renderSong(
+          state.tracks,
+          state.patterns,
+          state.clips,
+          state.synthParams,
+          state.bpm,
+          state.totalBars,
+          bitDepth,
+          (pct) => {
+            setProgress(pct);
+            setStatusText(`Rendering Master Mix (${pct}%)...`);
+          }
+        );
+
+        const filename = `${state.projectName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-master-${bitDepth}bit.wav`;
+        setDownloadReady({ blob: wavBlob, filename });
+      }
+
       setIsExporting(false);
       setProgress(100);
+      setStatusText('Render complete!');
     } catch (err) {
       console.error('Export error:', err);
       setIsExporting(false);
@@ -52,14 +85,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
 
   const handleDownloadFile = () => {
     if (!downloadReady) return;
-    WavExporter.downloadBlob(
-      downloadReady,
-      `${state.projectName.toLowerCase().replace(/\s+/g, '-')}-master.wav`
-    );
+    OfflineRenderer.downloadBlob(downloadReady.blob, downloadReady.filename);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 select-none">
       <div className="bg-[#181a24] border border-[#35394a] w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 bg-gradient-to-r from-emerald-950/60 via-[#1f2230] to-[#181a24] border-b border-[#2e3244]">
@@ -68,8 +98,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               <Download size={18} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Export Audio (Studio WAV)</h2>
-              <p className="text-xs text-gray-400">Offline Sample-Accurate 44.1kHz 16-bit Master</p>
+              <h2 className="text-base font-bold text-white">Export Audio & Stems</h2>
+              <p className="text-xs text-gray-400">Offline Non-Realtime High-Speed DSP Bounce</p>
             </div>
           </div>
           <button
@@ -82,9 +112,42 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
 
         {/* Content */}
         <div className="p-5 space-y-4 text-gray-200">
-          <div className="bg-[#12141c] p-3.5 rounded-lg border border-[#2b2e3e] space-y-2">
+          {/* Export Mode Switcher */}
+          <div className="grid grid-cols-2 gap-2 bg-[#12141c] p-1 rounded-lg border border-[#2b2e3e]">
+            <button
+              onClick={() => {
+                setExportMode('stems');
+                setDownloadReady(null);
+              }}
+              className={`py-2 px-3 rounded-md text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all ${
+                exportMode === 'stems'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Archive size={14} />
+              <span>Multi-Track Stems (.ZIP)</span>
+            </button>
+            <button
+              onClick={() => {
+                setExportMode('master');
+                setDownloadReady(null);
+              }}
+              className={`py-2 px-3 rounded-md text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all ${
+                exportMode === 'master'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <FileAudio size={14} />
+              <span>Full Master Mix (.WAV)</span>
+            </button>
+          </div>
+
+          {/* Bit Depth & Project Summary */}
+          <div className="bg-[#12141c] p-3.5 rounded-lg border border-[#2b2e3e] space-y-2.5">
             <div className="flex justify-between text-xs font-mono">
-              <span className="text-gray-400">Track:</span>
+              <span className="text-gray-400">Project:</span>
               <span className="text-white font-bold">{state.projectName}</span>
             </div>
             <div className="flex justify-between text-xs font-mono">
@@ -95,18 +158,39 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               <span className="text-gray-400">Length:</span>
               <span className="text-sky-400 font-bold">{state.totalBars} Bars ({(state.totalBars * (60 / state.bpm) * 4).toFixed(1)}s)</span>
             </div>
+            <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-[#252838]">
+              <span className="text-gray-400">Audio Precision:</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setBitDepth(16)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    bitDepth === 16 ? 'bg-cyan-600 text-white' : 'bg-[#232634] text-gray-400'
+                  }`}
+                >
+                  16-bit PCM
+                </button>
+                <button
+                  onClick={() => setBitDepth(32)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    bitDepth === 32 ? 'bg-cyan-600 text-white' : 'bg-[#232634] text-gray-400'
+                  }`}
+                >
+                  32-bit Float
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Progress Bar */}
+          {/* Progress Bar & Status */}
           {isExporting && (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 bg-[#12141c] p-3 rounded-lg border border-[#2d3142]">
               <div className="flex justify-between text-xs font-mono text-emerald-400">
-                <span>Rendering Audio DSP...</span>
+                <span className="truncate max-w-[280px]">{statusText}</span>
                 <span>{progress}%</span>
               </div>
-              <div className="w-full h-2.5 bg-[#12141c] rounded-full overflow-hidden border border-[#2d3142]">
+              <div className="w-full h-2 bg-[#1b1e2a] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 transition-all duration-150"
+                  className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-150"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -116,7 +200,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           {downloadReady && (
             <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex items-center gap-2 text-emerald-400 text-xs font-mono">
               <CheckCircle2 size={16} />
-              <span>Studio master audio rendered successfully!</span>
+              <span>Render ready: {downloadReady.filename}</span>
             </div>
           )}
 
@@ -127,8 +211,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                 disabled={isExporting}
                 className="flex-1 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30 transition-all disabled:opacity-50"
               >
-                {isExporting ? <Loader2 size={15} className="animate-spin" /> : <FileAudio size={15} />}
-                <span>{isExporting ? 'Rendering...' : 'Render Master WAV'}</span>
+                {isExporting ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                <span>{isExporting ? 'Bouncing DSP Offline...' : exportMode === 'stems' ? 'Export Stems ZIP Package' : 'Export 32/16-bit Master WAV'}</span>
               </button>
             ) : (
               <button
@@ -136,7 +220,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                 className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-500/40 transition-all"
               >
                 <Download size={15} />
-                <span>Download WAV File</span>
+                <span>Download {exportMode === 'stems' ? 'ZIP Archive' : 'WAV Master'}</span>
               </button>
             )}
           </div>

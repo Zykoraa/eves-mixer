@@ -92,12 +92,13 @@ export interface PlaylistClip {
   trackIndex: number; // arrangement row (0 to 15)
   patternId?: string; // if type === 'pattern'
   looperDeckId?: string; // if type === 'audio'
+  automationClipId?: string; // if type === 'automation'
   audioBufferIndex?: number;
   name: string;
   startBar: number; // start position in bars (0-indexed, float or int)
   lengthBars: number; // duration in bars
   color: string;
-  type: 'pattern' | 'audio';
+  type: 'pattern' | 'audio' | 'automation';
   audioBlobUrl?: string;
 }
 
@@ -109,6 +110,7 @@ export interface PlaylistTrack {
   solo: boolean;
   volume: number; // 0 to 1
   pan: number; // -1 to 1
+  isAutomationTrack?: boolean;
 }
 
 export interface LooperDeck {
@@ -241,7 +243,10 @@ export type ViewTab =
   | 'fxRack'
   | 'browser'
   | 'guitarRig'
-  | 'vstPatchbay';
+  | 'vstPatchbay'
+  | 'slicex'
+  | 'mixingDoctor'
+  | 'midiLearn';
 
 export type MusicalScale = 
   | 'chromatic'
@@ -258,3 +263,126 @@ export type MusicalScale =
   | 'japanese';
 
 export type RootNote = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
+
+// =========================================================================
+// 1. AUTOMATION ARCHITECTURE
+// =========================================================================
+export type AutomationTargetType =
+  | 'mixerVolume'
+  | 'mixerPan'
+  | 'mixerFilterCutoff'
+  | 'mixerFilterRes'
+  | 'mixerReverbMix'
+  | 'mixerDelayMix'
+  | 'mixerDistortionDrive'
+  | 'synthCutoff'
+  | 'synthResonance'
+  | 'synthLfoRate'
+  | 'masterVolume';
+
+export interface AutomationTarget {
+  type: AutomationTargetType;
+  channelIndex?: number; // 0 = Master, 1-8 = Inserts
+  label: string;
+}
+
+export interface AutomationNode {
+  id: string;
+  bar: number; // bar position (e.g. 0.0, 1.5, 4.0)
+  value: number; // 0.0 to 1.0 normalized
+  tension?: number; // -1.0 to 1.0 curvature (0 = linear)
+}
+
+export interface AutomationClip {
+  id: string;
+  name: string;
+  color: string;
+  trackIndex: number;
+  startBar: number;
+  lengthBars: number;
+  target: AutomationTarget;
+  nodes: AutomationNode[];
+}
+
+// =========================================================================
+// 2. SIDECHAIN DUCKING & PEAK CONTROLLER
+// =========================================================================
+export interface SidechainRoute {
+  id: string;
+  enabled: boolean;
+  name: string;
+  sourceChannelIndex: number; // e.g. Kick (Channel 1)
+  targetChannelIndex: number; // e.g. 808 Bass (Channel 2)
+  thresholdDb: number; // -40 to 0 dB
+  duckingDepthDb: number; // 0 to 24 dB
+  attackMs: number; // 0.1 to 50 ms
+  releaseMs: number; // 10 to 500 ms
+  mode: 'volume' | 'lowShelf';
+}
+
+// =========================================================================
+// 3. INTELLIGENT TRANSIENT SLICER (SLICEX)
+// =========================================================================
+export interface AudioSlice {
+  id: string;
+  sliceIndex: number;
+  startSample: number;
+  endSample: number;
+  startTime: number; // in seconds
+  duration: number; // in seconds
+  color: string;
+  pitchOffset?: number;
+  buffer?: AudioBuffer;
+}
+
+export interface SlicexSession {
+  audioBuffer: AudioBuffer | null;
+  fileName: string;
+  slices: AudioSlice[];
+  selectedSliceId: string | null;
+  sensitivity: number; // 0 to 100
+  bpm: number;
+  bars: number;
+}
+
+// =========================================================================
+// 4. AI MIXING DOCTOR & SPECTRAL COLLISION
+// =========================================================================
+export interface SpectralCollisionAlert {
+  id: string;
+  channelA: number;
+  channelB: number;
+  channelAName: string;
+  channelBName: string;
+  freqMin: number;
+  freqMax: number;
+  severity: 'warning' | 'critical';
+  description: string;
+  suggestedAction: 'sidechain' | 'notchEq' | 'highpass';
+}
+
+// =========================================================================
+// 5. HARDWARE MIDI LEARN & CC MAPPING
+// =========================================================================
+export interface MidiCcMapping {
+  id: string;
+  ccNumber: number; // 0 to 127
+  channel: number; // 0 for any, 1 to 16
+  name: string;
+  targetType: 'mixerVolume' | 'mixerPan' | 'mixerMute' | 'synthCutoff' | 'vstParam' | 'tempo';
+  channelIndex?: number;
+  paramId?: string;
+  min: number;
+  max: number;
+}
+
+// =========================================================================
+// 6. IMPULSE RESPONSE CONVOLUTION
+// =========================================================================
+export interface ImpulseResponseMeta {
+  id: string;
+  name: string;
+  category: 'cabinet' | 'space';
+  description: string;
+  sampleRate: number;
+}

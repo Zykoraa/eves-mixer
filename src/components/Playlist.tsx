@@ -7,14 +7,25 @@ import {
   Mic,
   Play,
   Scissors,
+  TrendingUp,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
-import { PlaylistClip } from '../types/daw';
+import { PlaylistClip, AutomationTargetType } from '../types/daw';
+import { AutomationCurveClip } from './AutomationCurveClip';
+
+const AUTOMATION_TARGET_PRESETS: { type: AutomationTargetType; channelIndex?: number; label: string; color: string }[] = [
+  { type: 'synthCutoff', label: 'Eve Lead Cutoff', color: '#ec4899' },
+  { type: 'masterVolume', label: 'Master Volume', color: '#ff763b' },
+  { type: 'mixerReverbMix', channelIndex: 1, label: 'Drums Reverb Mix', color: '#06b6d4' },
+  { type: 'mixerFilterCutoff', channelIndex: 3, label: '808 Filter Sweep', color: '#a855f7' },
+  { type: 'mixerDelayMix', channelIndex: 4, label: 'Lead Delay Mix', color: '#eab308' },
+];
 
 export const Playlist: React.FC = () => {
   const [state, store] = useDawStore();
-  const [selectedSourceType, setSelectedSourceType] = useState<'pattern' | 'audio'>('pattern');
+  const [selectedSourceType, setSelectedSourceType] = useState<'pattern' | 'audio' | 'automation'>('pattern');
   const [selectedPatternId, setSelectedPatternId] = useState<string>(state.selectedPatternId);
+  const [selectedAutoPresetIdx, setSelectedAutoPresetIdx] = useState<number>(0);
   const [clipLengthBars, setClipLengthBars] = useState<number>(4);
 
   const totalBars = 32;
@@ -29,7 +40,11 @@ export const Playlist: React.FC = () => {
     if (existingIndex >= 0) {
       // Remove clip
       const clip = state.clips[existingIndex];
-      store.removePlaylistClip(clip.id);
+      if (clip.automationClipId) {
+        store.removeAutomationClip(clip.automationClipId);
+      } else {
+        store.removePlaylistClip(clip.id);
+      }
       return;
     }
 
@@ -47,8 +62,7 @@ export const Playlist: React.FC = () => {
         type: 'pattern',
       };
       store.addPlaylistClip(newClip);
-    } else {
-      // Add audio/looper clip placeholder
+    } else if (selectedSourceType === 'audio') {
       const newClip: PlaylistClip = {
         id: `audio-${Date.now()}`,
         trackIndex,
@@ -59,6 +73,26 @@ export const Playlist: React.FC = () => {
         type: 'audio',
       };
       store.addPlaylistClip(newClip);
+    } else {
+      // Add Automation Clip
+      const preset = AUTOMATION_TARGET_PRESETS[selectedAutoPresetIdx];
+      store.addAutomationClip({
+        name: preset.label,
+        color: preset.color,
+        trackIndex,
+        startBar: barIndex,
+        lengthBars: clipLengthBars,
+        target: {
+          type: preset.type,
+          channelIndex: preset.channelIndex,
+          label: preset.label,
+        },
+        nodes: [
+          { id: `node-1`, bar: 0, value: 0.25, tension: 0.35 },
+          { id: `node-2`, bar: clipLengthBars * 0.5, value: 0.85, tension: -0.35 },
+          { id: `node-3`, bar: clipLengthBars, value: 0.3, tension: 0 },
+        ],
+      });
     }
   };
 
@@ -72,7 +106,7 @@ export const Playlist: React.FC = () => {
             <span>Playlist Arrangement</span>
           </div>
 
-          {/* Source Palette Switcher: Patterns vs Audio Loops */}
+          {/* Source Palette Switcher: Patterns vs Audio Loops vs Automation */}
           <div className="flex items-center bg-[#121316] p-0.5 rounded border border-[#353945]">
             <button
               onClick={() => setSelectedSourceType('pattern')}
@@ -90,7 +124,16 @@ export const Playlist: React.FC = () => {
               }`}
             >
               <Mic size={13} />
-              <span>Audio Clips</span>
+              <span>Audio</span>
+            </button>
+            <button
+              onClick={() => setSelectedSourceType('automation')}
+              className={`px-2.5 py-1 text-xs font-semibold rounded transition-all flex items-center gap-1 ${
+                selectedSourceType === 'automation' ? 'bg-pink-600 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <TrendingUp size={13} />
+              <span>Automation</span>
             </button>
           </div>
 
@@ -106,6 +149,24 @@ export const Playlist: React.FC = () => {
                 {state.patterns.map((p) => (
                   <option key={p.id} value={p.id} className="bg-[#181a1f] text-white">
                     {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Automation Target Picker */}
+          {selectedSourceType === 'automation' && (
+            <div className="flex items-center gap-1 bg-[#121316] px-2 py-1 rounded border border-[#353945]">
+              <span className="text-[10px] text-gray-400 uppercase font-mono">TARGET:</span>
+              <select
+                value={selectedAutoPresetIdx}
+                onChange={(e) => setSelectedAutoPresetIdx(Number(e.target.value))}
+                className="bg-transparent text-xs font-mono font-bold text-pink-400 focus:outline-none cursor-pointer"
+              >
+                {AUTOMATION_TARGET_PRESETS.map((p, idx) => (
+                  <option key={p.label} value={idx} className="bg-[#181a1f] text-white">
+                    {p.label}
                   </option>
                 ))}
               </select>
@@ -232,26 +293,42 @@ export const Playlist: React.FC = () => {
                   ))}
 
                   {/* Rendered Clips */}
-                  {trackClips.map((clip) => (
-                    <div
-                      key={clip.id}
-                      onClick={() => store.removePlaylistClip(clip.id)}
-                      title={`${clip.name} (Click to remove)`}
-                      className="absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between text-xs font-mono font-bold text-white shadow-md z-10 cursor-pointer overflow-hidden group hover:brightness-110"
-                      style={{
-                        left: `${clip.startBar * 80 + 2}px`,
-                        width: `${clip.lengthBars * 80 - 4}px`,
-                        backgroundColor: `${clip.color}dd`,
-                        borderColor: clip.color,
-                      }}
-                    >
-                      <div className="flex items-center gap-1 truncate">
-                        {clip.type === 'pattern' ? <Music size={12} /> : <Mic size={12} />}
-                        <span className="truncate">{clip.name}</span>
+                  {trackClips.map((clip) => {
+                    if (clip.type === 'automation' && clip.automationClipId) {
+                      const autoClip = state.automationClips.find((c) => c.id === clip.automationClipId);
+                      if (autoClip) {
+                        return (
+                          <AutomationCurveClip
+                            key={clip.id}
+                            clip={autoClip}
+                            width={clip.lengthBars * 80}
+                            height={54}
+                          />
+                        );
+                      }
+                    }
+
+                    return (
+                      <div
+                        key={clip.id}
+                        onClick={() => store.removePlaylistClip(clip.id)}
+                        title={`${clip.name} (Click to remove)`}
+                        className="absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between text-xs font-mono font-bold text-white shadow-md z-10 cursor-pointer overflow-hidden group hover:brightness-110"
+                        style={{
+                          left: `${clip.startBar * 80 + 2}px`,
+                          width: `${clip.lengthBars * 80 - 4}px`,
+                          backgroundColor: `${clip.color}dd`,
+                          borderColor: clip.color,
+                        }}
+                      >
+                        <div className="flex items-center gap-1 truncate">
+                          {clip.type === 'pattern' ? <Music size={12} /> : <Mic size={12} />}
+                          <span className="truncate">{clip.name}</span>
+                        </div>
+                        <span className="text-[10px] opacity-75">{clip.lengthBars}B</span>
                       </div>
-                      <span className="text-[10px] opacity-75">{clip.lengthBars}B</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })}

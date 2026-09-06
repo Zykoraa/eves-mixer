@@ -1,5 +1,6 @@
 type NoteOnCallback = (midiNote: number, velocity: number) => void;
 type NoteOffCallback = (midiNote: number) => void;
+export type ControlChangeCallback = (controller: number, value: number, channel: number) => void;
 
 export class MidiManager {
   private static instance: MidiManager | null = null;
@@ -11,6 +12,7 @@ export class MidiManager {
   private outputMap: Map<string, MIDIOutput> = new Map();
   private onNoteOnListeners: Set<NoteOnCallback> = new Set();
   private onNoteOffListeners: Set<NoteOffCallback> = new Set();
+  private onControlChangeListeners: Set<ControlChangeCallback> = new Set();
 
   private constructor() {
     this.initMidi();
@@ -76,6 +78,10 @@ export class MidiManager {
     } else if (command === 8) {
       // 0x8 = Note Off
       this.onNoteOffListeners.forEach((cb) => cb(note));
+    } else if (command === 11) {
+      // 0xb = Control Change (CC)
+      const channel = (status & 0x0f) + 1;
+      this.onControlChangeListeners.forEach((cb) => cb(note, velocity, channel));
     }
   }
 
@@ -122,5 +128,10 @@ export class MidiManager {
   public onNoteOff(cb: NoteOffCallback) {
     this.onNoteOffListeners.add(cb);
     return () => this.onNoteOffListeners.delete(cb);
+  }
+
+  public onControlChange(cb: ControlChangeCallback) {
+    this.onControlChangeListeners.add(cb);
+    return () => this.onControlChangeListeners.delete(cb);
   }
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sliders, Volume2, Activity, Zap } from 'lucide-react';
+import { Sliders, Volume2, Activity, Zap, Stethoscope, Radio } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { AudioEngine } from '../audio/AudioEngine';
 
@@ -36,13 +36,29 @@ export const MixerRack: React.FC = () => {
           </span>
         </div>
 
-        <button
-          onClick={() => store.setActiveView('fxRack')}
-          className="flex items-center gap-1 px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/40 text-xs font-semibold transition-all"
-        >
-          <Activity size={13} />
-          <span>Open FX Rack</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => store.setActiveView('mixingDoctor')}
+            className="flex items-center gap-1 px-2.5 py-1 rounded bg-teal-500/20 text-teal-400 hover:bg-teal-500/30 border border-teal-500/40 text-xs font-semibold transition-all"
+          >
+            <Stethoscope size={13} />
+            <span>Mixing Doctor</span>
+          </button>
+          <button
+            onClick={() => store.setActiveView('midiLearn')}
+            className="flex items-center gap-1 px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/40 text-xs font-semibold transition-all"
+          >
+            <Radio size={13} />
+            <span>MIDI Learn</span>
+          </button>
+          <button
+            onClick={() => store.setActiveView('fxRack')}
+            className="flex items-center gap-1 px-2.5 py-1 rounded bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/40 text-xs font-semibold transition-all"
+          >
+            <Activity size={13} />
+            <span>Open FX Rack</span>
+          </button>
+        </div>
       </div>
 
       {/* Mixer Channels Strips */}
@@ -70,9 +86,16 @@ export const MixerRack: React.FC = () => {
                     {idx === 0 ? 'MASTER' : channel.name}
                   </span>
                 </div>
-                <span className="text-[9px] font-mono text-gray-400">
-                  {idx === 0 ? 'MAIN BUS' : `INSERT ${idx}`}
-                </span>
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-[9px] font-mono text-gray-400">
+                    {idx === 0 ? 'MAIN BUS' : `INSERT ${idx}`}
+                  </span>
+                  {state.sidechainRoutes.some((r) => r.enabled && (r.sourceChannelIndex === idx || r.targetChannelIndex === idx)) && (
+                    <span className="text-[8px] font-mono font-bold px-1 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                      ⚡SC
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Stereo Panning Slider */}

@@ -300,6 +300,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       { id: 'browser', name: 'Sound Browser', desc: 'Library of 40+ modeled instruments and soundbanks', shortcut: '8' },
       { id: 'guitarRig', name: 'Eve Guitar Rig Pro', desc: 'Amp heads, speaker cab IRs, pedalboard and tuner', shortcut: '9' },
       { id: 'vstPatchbay', name: 'VST Host & Plugin Patchbay', desc: 'Mixer insert slots and Web Audio Modules', shortcut: '0' },
+      { id: 'slicex', name: 'Eve Slicex Beat Slicer', desc: 'AI transient beat slicer, chopper, and MPC pad dump', shortcut: 'S' },
+      { id: 'mixingDoctor', name: 'AI Mixing Doctor', desc: 'Real-time multi-channel spectral collision analyzer and 1-click fixes', shortcut: 'D' },
+      { id: 'midiLearn', name: 'Hardware MIDI Learn', desc: 'Map physical MIDI CC knobs, faders, and controllers', shortcut: 'M' },
     ];
 
     views.forEach((v) => {
@@ -321,9 +324,24 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
     // 7. DAW Actions & Utilities
     items.push({
+      id: 'act-export-stems',
+      title: 'Export Multi-Track Stems (.ZIP)',
+      subtitle: 'Render isolated drum, bass, melodic, and master stems into a ZIP package',
+      category: 'action',
+      badge: 'STEMS',
+      badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      icon: <Download size={16} className="text-purple-400" />,
+      tags: ['export', 'stems', 'zip', 'render', 'audio', 'download'],
+      onSelect: () => {
+        onClose();
+        onOpenExport?.();
+      },
+    });
+
+    items.push({
       id: 'act-export',
       title: 'Export Song to Master WAV',
-      subtitle: 'Render radio-ready 44.1kHz 16-bit WAV file offline',
+      subtitle: 'Render radio-ready 44.1kHz 16/32-bit WAV file offline',
       category: 'action',
       badge: 'ACTION',
       badgeColor: 'bg-teal-500/20 text-teal-400 border-teal-500/30',

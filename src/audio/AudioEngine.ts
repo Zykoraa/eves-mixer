@@ -5,7 +5,18 @@ import { LooperStation } from './LooperStation';
 import { InstrumentEngine } from './InstrumentEngine';
 import { GuitarEngine } from './GuitarEngine';
 import { VstEngine } from './VstEngine';
-import { ChannelTrack, Pattern, PlaylistClip, PlaybackMode, SynthParameters } from '../types/daw';
+import { SidechainManager } from './SidechainManager';
+import { ConvolutionEngine } from './ConvolutionEngine';
+import {
+  ChannelTrack,
+  Pattern,
+  PlaylistClip,
+  PlaybackMode,
+  SynthParameters,
+  AutomationClip,
+  AutomationNode,
+  AutomationTarget,
+} from '../types/daw';
 
 export class AudioEngine {
   private static instance: AudioEngine | null = null;
@@ -18,6 +29,11 @@ export class AudioEngine {
   public looperStation: LooperStation;
   public guitarEngine: GuitarEngine;
   public vstEngine: VstEngine;
+  public sidechainManager: SidechainManager;
+  public convolutionEngine: ConvolutionEngine;
+
+  // Automation
+  private automationClips: AutomationClip[] = [];
 
   // Transport & Clock State
   public isPlaying: boolean = false;
@@ -70,6 +86,13 @@ export class AudioEngine {
 
     // Initialize VST Host Engine
     this.vstEngine = VstEngine.getInstance(this.ctx);
+
+    // Initialize Sidechain Manager
+    this.sidechainManager = SidechainManager.getInstance();
+    this.sidechainManager.init(this.ctx, this.mixer);
+
+    // Initialize Convolution Engine
+    this.convolutionEngine = ConvolutionEngine.getInstance();
   }
 
   public static getInstance(): AudioEngine {
@@ -90,13 +113,17 @@ export class AudioEngine {
     pattern: Pattern | null,
     allPatterns: Pattern[],
     clips: PlaylistClip[],
-    synthParams: SynthParameters
+    synthParams: SynthParameters,
+    automationClips?: AutomationClip[]
   ) {
     this.currentTracks = tracks;
     this.currentPattern = pattern;
     this.allPatterns = allPatterns;
     this.playlistClips = clips;
     this.synthParams = synthParams;
+    if (automationClips) {
+      this.automationClips = automationClips;
+    }
   }
 
   public addStepListener(cb: (step: number, bar: number) => void) {
@@ -245,6 +272,7 @@ export class AudioEngine {
       if (trackSteps && trackSteps[step] && trackSteps[step].active) {
         const stepData = trackSteps[step];
         const mixerChan = this.mixer.getChannel(track.mixerChannelIndex);
+        this.sidechainManager.triggerDucking(track.mixerChannelIndex, time);
 
         if (track.type === 'drum' && track.soundId) {
           this.drumSynth.trigger(
@@ -312,6 +340,9 @@ export class AudioEngine {
   private scheduleSongStep(stepIndex: number, time: number) {
     const currentBar = stepIndex / 16;
 
+    // Evaluate automation curves for active automation clips
+    this.evaluateAutomation(currentBar, time);
+
     // Find all pattern clips active at this current bar
     for (const clip of this.playlistClips) {
       if (clip.type === 'pattern' && clip.patternId) {
@@ -323,6 +354,99 @@ export class AudioEngine {
           }
         }
       }
+    }
+  }
+
+  private evaluateAutomation(currentBar: number, time: number) {
+    for (const clip of this.automationClips) {
+      if (currentBar >= clip.startBar && currentBar <= clip.startBar + clip.lengthBars) {
+        if (!clip.nodes || clip.nodes.length === 0) continue;
+
+        const localBar = currentBar - clip.startBar;
+        const val = this.interpolateAutomationValue(clip.nodes, localBar);
+        this.applyAutomationTarget(clip.target, val, time);
+      }
+    }
+  }
+
+  private interpolateAutomationValue(nodes: AutomationNode[], localBar: number): number {
+    if (nodes.length === 1) return nodes[0].value;
+
+    const sorted = [...nodes].sort((a, b) => a.bar - b.bar);
+
+    if (localBar <= sorted[0].bar) return sorted[0].value;
+    if (localBar >= sorted[sorted.length - 1].bar) return sorted[sorted.length - 1].value;
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const n1 = sorted[i];
+      const n2 = sorted[i + 1];
+
+      if (localBar >= n1.bar && localBar <= n2.bar) {
+        const barSpan = n2.bar - n1.bar;
+        if (barSpan <= 0.0001) return n1.value;
+
+        let t = (localBar - n1.bar) / barSpan;
+        const tension = n1.tension || 0;
+
+        if (tension > 0) {
+          t = Math.pow(t, 1 + tension * 2.5);
+        } else if (tension < 0) {
+          t = 1 - Math.pow(1 - t, 1 + Math.abs(tension) * 2.5);
+        }
+
+        return n1.value + (n2.value - n1.value) * t;
+      }
+    }
+
+    return sorted[0].value;
+  }
+
+  private applyAutomationTarget(target: AutomationTarget, val: number, time: number) {
+    const channelIdx = target.channelIndex ?? 0;
+    const channel = this.mixer.getChannel(channelIdx);
+
+    switch (target.type) {
+      case 'mixerVolume':
+        channel.volumeNode.gain.setTargetAtTime(val * 1.25, time, 0.02);
+        break;
+      case 'mixerPan':
+        channel.panNode.pan.setTargetAtTime(val * 2 - 1, time, 0.02);
+        break;
+      case 'mixerFilterCutoff': {
+        const cutoff = 40 + Math.pow(val, 2.5) * 19960;
+        channel.effectsChain.resFilter.frequency.setTargetAtTime(cutoff, time, 0.02);
+        break;
+      }
+      case 'mixerFilterRes':
+        channel.effectsChain.resFilter.Q.setTargetAtTime(val * 20, time, 0.02);
+        break;
+      case 'mixerReverbMix':
+        channel.effectsChain.reverbWet.gain.setTargetAtTime(val, time, 0.02);
+        break;
+      case 'mixerDelayMix':
+        channel.effectsChain.delayWet.gain.setTargetAtTime(val, time, 0.02);
+        break;
+      case 'mixerDistortionDrive':
+        channel.effectsChain.distWetGain.gain.setTargetAtTime(val, time, 0.02);
+        break;
+      case 'synthCutoff':
+        if (this.synthParams) {
+          this.synthParams.filterCutoff = 40 + Math.pow(val, 2.5) * 19960;
+        }
+        break;
+      case 'synthResonance':
+        if (this.synthParams) {
+          this.synthParams.filterResonance = val * 20;
+        }
+        break;
+      case 'synthLfoRate':
+        if (this.synthParams) {
+          this.synthParams.lfoRate = 0.1 + val * 19.9;
+        }
+        break;
+      case 'masterVolume':
+        this.mixer.masterChannel.volumeNode.gain.setTargetAtTime(val * 1.25, time, 0.02);
+        break;
     }
   }
 

@@ -21,6 +21,8 @@ import {
   Guitar,
   Plug,
   Search,
+  Scissors,
+  Stethoscope,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { NOTE_NAMES, SCALE_INTERVALS } from '../audio/Presets';
@@ -113,6 +115,9 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'browser', label: 'Sounds', icon: <Compass size={15} />, color: 'text-amber-400' },
     { id: 'guitarRig', label: 'Guitar Rig', icon: <Guitar size={15} />, color: 'text-red-400' },
     { id: 'vstPatchbay', label: 'VST Host', icon: <Plug size={15} />, color: 'text-indigo-400' },
+    { id: 'slicex', label: 'Slicex', icon: <Scissors size={15} />, color: 'text-amber-400' },
+    { id: 'mixingDoctor', label: 'Doctor', icon: <Stethoscope size={15} />, color: 'text-teal-400' },
+    { id: 'midiLearn', label: 'MIDI Learn', icon: <Sliders size={15} />, color: 'text-cyan-400' },
   ];
 
   return (

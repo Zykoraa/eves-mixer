@@ -264,7 +264,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
         icon: <Activity size={16} className="text-orange-400" />,
         tags: ['beat', 'groove', 'pattern', 'template', 'drum', bt.id],
         onSelect: () => {
-          store.applyDrumPreset(bt.id);
+          if (bt.id === 'trap') {
+            store.loadSampleTrapBeat();
+          } else {
+            store.applyDrumPreset(bt.id);
+          }
           store.setActiveView('channelRack');
           onClose();
         },

@@ -373,6 +373,17 @@ export class AudioEngine {
             this.instrumentEngine.noteOn(track.instrumentId, note.midiNote, note.velocity * track.volume, time, mixerChan.inputNode);
             const durSeconds = (note.durationSteps * 60) / this.bpm / 4;
             this.instrumentEngine.noteOff(track.instrumentId, note.midiNote, time + durSeconds);
+          } else if (track.type === 'drum' && track.soundId) {
+            const pitchOffset = note.midiNote - 36;
+            this.drumSynth.trigger(
+              track.soundId,
+              time,
+              note.velocity * track.volume,
+              mixerChan.inputNode,
+              track.customAudioUrl,
+              track.drumKitId || 'trap',
+              pitchOffset
+            );
           }
         }
       }

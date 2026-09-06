@@ -27,6 +27,7 @@ import {
   Zap,
   HardDrive,
   Disc,
+  Flame,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { NOTE_NAMES, SCALE_INTERVALS } from '../audio/Presets';
@@ -441,6 +442,16 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Music size={13} />
           <span className="hidden lg:inline">.MID</span>
+        </button>
+
+        {/* 1-Click Trap Beat Demo */}
+        <button
+          onClick={() => store.loadSampleTrapBeat()}
+          title="Load Complete Sample Trap Beat (Punchy Kick, 808 Slides, Fast Hats & Dark Melody)"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white text-xs font-bold shadow-md shadow-orange-600/30 transition-all hover:scale-105"
+        >
+          <Flame size={14} className="text-yellow-300" />
+          <span>Trap Beat</span>
         </button>
 
         {/* Inspiration Generator Button */}

@@ -183,16 +183,16 @@ const createInitialTracks = (): ChannelTrack[] => [
         { active: true, velocity: 0.45 },
         { active: true, velocity: 0.90 },
         { active: true, velocity: 0.40 },
-        { active: true, velocity: 0.80 },
+        { active: true, velocity: 0.88, ratchetCount: 2, velocityRamp: 'up' },
         { active: true, velocity: 0.50 },
         { active: true, velocity: 0.95 },
         { active: true, velocity: 0.45 },
         { active: true, velocity: 0.75 },
-        { active: true, velocity: 0.50 },
+        { active: true, velocity: 0.92, ratchetCount: 3, velocityRamp: 'down' },
         { active: true, velocity: 0.95, pitchOffset: 0 },
         { active: true, velocity: 0.82, pitchOffset: -2 },
-        { active: true, velocity: 0.88, pitchOffset: 2 },
-        { active: true, velocity: 0.95, pitchOffset: 5 }, // Rolling 32nd-style triplet fill
+        { active: true, velocity: 0.95, ratchetCount: 4, velocityRamp: 'up', pitchRamp: -2 },
+        { active: true, velocity: 1.0, ratchetCount: 8, velocityRamp: 'down', pitchRamp: -5 },
       ],
     },
   },
@@ -355,10 +355,11 @@ const createInitialPatterns = (): Pattern[] => [
       { id: 'rh-8', trackId: 't-rhodes', midiNote: 55, startStep: 8, durationSteps: 7, velocity: 0.72 }, // G3
       { id: 'rh-9', trackId: 't-rhodes', midiNote: 60, startStep: 8, durationSteps: 7, velocity: 0.80 }, // C4 (Abmaj7)
 
-      // Catchy melodic top-line synth lead hook
+      // Catchy melodic top-line synth lead hook with FL Studio Slide Note!
       { id: 'syn-1', trackId: 't-synth', midiNote: 67, startStep: 0, durationSteps: 2, velocity: 0.85 }, // G4
       { id: 'syn-2', trackId: 't-synth', midiNote: 70, startStep: 3, durationSteps: 1, velocity: 0.80 }, // Bb4
-      { id: 'syn-3', trackId: 't-synth', midiNote: 72, startStep: 4, durationSteps: 3, velocity: 0.90 }, // C5
+      { id: 'syn-3', trackId: 't-synth', midiNote: 72, startStep: 4, durationSteps: 2, velocity: 0.90 }, // C5
+      { id: 'syn-slide', trackId: 't-synth', midiNote: 75, startStep: 6, durationSteps: 1, velocity: 0.85, isSlide: true }, // Eb5 Slide!
       { id: 'syn-4', trackId: 't-synth', midiNote: 67, startStep: 8, durationSteps: 2, velocity: 0.85 }, // G4
       { id: 'syn-5', trackId: 't-synth', midiNote: 65, startStep: 11, durationSteps: 1, velocity: 0.80 }, // F4
       { id: 'syn-6', trackId: 't-synth', midiNote: 63, startStep: 12, durationSteps: 2, velocity: 0.85 }, // Eb4
@@ -1586,11 +1587,57 @@ class Store {
   }
 
   public resetToProDemo() {
-    this.state.tracks = createInitialTracks();
-    this.state.patterns = createInitialPatterns();
-    this.state.selectedPatternId = 'pat-1';
+    this.loadSampleTrapBeat();
+  }
+
+  public loadSampleTrapBeat() {
+    this.audioEngine.stop();
+    this.state.isPlaying = false;
+    this.state.currentStep = 0;
+    this.state.currentBar = 0;
+
+    this.state.projectName = 'Nightfall Trap Heat';
     this.state.bpm = 140;
     this.state.swing = 0;
+    this.state.selectedKey = 'C';
+    this.state.selectedScale = 'minor';
+    this.state.snapToScale = true;
+
+    this.state.tracks = createInitialTracks();
+    this.state.patterns = createInitialPatterns();
+    this.state.clips = createInitialClips();
+    this.state.selectedPatternId = 'pat-1';
+    this.state.selectedTrackId = 't-808';
+    this.state.playbackMode = 'pattern';
+    this.state.activeView = 'channelRack';
+
+    // Radio Master Maximizer with -14 LUFS commercial punch
+    this.state.masteringParams = {
+      enabled: true,
+      inputGainDb: 1.5,
+      targetLufs: -14,
+      ceilingDb: -0.3,
+      stereoWidth: 1.15,
+      monoSubEnabled: true,
+      softClipWarmth: 45,
+      limiterReleaseMs: 50,
+    };
+    MasteringSuite.getInstance().applyParameters(this.state.masteringParams);
+
+    // Vintage tape warmth
+    this.state.tapeColorParams = {
+      enabled: true,
+      wowFlutter: 15,
+      flutterRate: 0.9,
+      tapeDrive: 22,
+      vinylNoise: 12,
+      vinylTone: 55,
+      dropouts: 0,
+      spaceReverb: 15,
+      mix: 35,
+    };
+    TapeColorEngine.getInstance().applyParameters(this.state.tapeColorParams);
+
     this.syncAudioEngineData();
     this.notify();
     this.saveToStorage();

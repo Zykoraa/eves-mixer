@@ -101,13 +101,13 @@ export const InspirationModal: React.FC<InspirationModalProps> = ({ isOpen, onCl
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               <button
                 onClick={() => {
-                  store.applyDrumPreset('trap');
+                  store.loadSampleTrapBeat();
                   onClose();
                 }}
                 className="p-3 rounded-lg bg-[#12141c] hover:bg-[#222536] border border-[#2c3042] text-left hover:border-orange-500/60 transition-all"
               >
                 <div className="text-xs font-bold text-orange-400 mb-1">Trap Banger</div>
-                <div className="text-[10px] text-gray-400">140 BPM • Rolling 32nd Hats & 808</div>
+                <div className="text-[10px] text-gray-400">140 BPM • 808 Slides, Fast Hats & Melody</div>
               </button>
 
               <button

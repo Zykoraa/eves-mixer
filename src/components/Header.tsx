@@ -29,6 +29,7 @@ import {
   Disc,
   Flame,
   ChevronDown,
+  VolumeX,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { NOTE_NAMES, SCALE_INTERVALS } from '../audio/Presets';
@@ -323,6 +324,54 @@ export const Header: React.FC<HeaderProps> = ({
               {String(state.currentBar + 1).padStart(2, '0')}:
               {String(Math.floor(state.currentStep / 4) + 1).padStart(2, '0')}
             </div>
+          </div>
+        </div>
+
+        {/* Master Output Volume Slider & Quick Mute */}
+        <div className="flex items-center gap-2 bg-[#121316] px-2.5 py-1 rounded-md border border-[#353945]">
+          <button
+            onClick={() => {
+              const masterCh = state.mixerChannels[0];
+              if (masterCh) {
+                store.updateMixerChannel(0, { mute: !masterCh.mute });
+              }
+            }}
+            title={state.mixerChannels[0]?.mute ? 'Unmute Master Output' : 'Mute Master Output'}
+            className={`p-1 rounded transition-colors cursor-pointer ${
+              state.mixerChannels[0]?.mute
+                ? 'text-red-400 hover:text-red-300'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            {state.mixerChannels[0]?.mute || (state.mixerChannels[0]?.volume || 0) === 0 ? (
+              <VolumeX size={16} className="text-red-400" />
+            ) : (
+              <Volume2 size={16} className="text-emerald-400" />
+            )}
+          </button>
+
+          <div className="flex flex-col justify-center">
+            <div className="flex justify-between items-center text-[9px] font-mono text-gray-400 leading-none mb-1">
+              <span className="font-bold">MASTER</span>
+              <span className={state.mixerChannels[0]?.mute ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}>
+                {state.mixerChannels[0]?.mute
+                  ? 'MUTED'
+                  : `${Math.round((state.mixerChannels[0]?.volume ?? 0.7) * 100)}%`}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1.0}
+              step={0.01}
+              value={state.mixerChannels[0]?.mute ? 0 : state.mixerChannels[0]?.volume ?? 0.7}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                store.updateMixerChannel(0, { volume: val, mute: false });
+              }}
+              title={`Master Volume: ${Math.round((state.mixerChannels[0]?.volume ?? 0.7) * 100)}%`}
+              className="w-20 sm:w-24 h-1.5 bg-[#252838] accent-emerald-500 rounded-lg cursor-pointer"
+            />
           </div>
         </div>
       </div>

@@ -437,7 +437,7 @@ const createInitialClips = (): PlaylistClip[] => [
 ];
 
 const createInitialMixerChannels = (): MixerChannel[] => [
-  { id: 'mix-0', name: 'Master', color: '#ff763b', volume: 0.95, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
+  { id: 'mix-0', name: 'Master', color: '#ff763b', volume: 0.70, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
   { id: 'mix-1', name: 'Drums', color: '#f97316', volume: 0.9, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
   { id: 'mix-2', name: 'Hi-Hats', color: '#00d2ff', volume: 0.85, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
   { id: 'mix-3', name: '808 Bass', color: '#a855f7', volume: 0.95, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
@@ -1712,15 +1712,21 @@ class Store {
     this.state.playbackMode = 'pattern';
     this.state.activeView = 'channelRack';
 
-    // Radio Master Maximizer with -14 LUFS commercial punch
+    // Set Master Channel Volume to a comfortable 70%
+    if (this.state.mixerChannels[0]) {
+      this.state.mixerChannels[0].volume = 0.70;
+      this.audioEngine.mixer.getChannel(0).setVolume(0.70, this.audioEngine.ctx);
+    }
+
+    // Radio Master Maximizer with comfortable -14 LUFS level
     this.state.masteringParams = {
       enabled: true,
-      inputGainDb: 1.5,
+      inputGainDb: 0,
       targetLufs: -14,
-      ceilingDb: -0.3,
+      ceilingDb: -1.0,
       stereoWidth: 1.15,
       monoSubEnabled: true,
-      softClipWarmth: 45,
+      softClipWarmth: 35,
       limiterReleaseMs: 50,
     };
     MasteringSuite.getInstance().applyParameters(this.state.masteringParams);

@@ -595,7 +595,7 @@ export class AudioEngine {
         }
         break;
       case 'masterVolume':
-        this.mixer.masterChannel.volumeNode.gain.setTargetAtTime(val * 1.25, time, 0.02);
+        this.mixer.masterChannel.setVolume(val, this.ctx);
         break;
     }
   }

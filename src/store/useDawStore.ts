@@ -65,7 +65,7 @@ import { TapeColorEngine } from '../audio/TapeColorEngine';
 import { ChordArchitect } from '../audio/ChordArchitect';
 
 // Default initial tracks
-const CURRENT_STORAGE_VERSION = 'v3_vocal_studio_2026';
+const CURRENT_STORAGE_VERSION = 'v4_audio_taper_comfort';
 
 // Default initial tracks with authentic modern trap/r&b groove
 const createInitialTracks = (): ChannelTrack[] => [
@@ -437,7 +437,7 @@ const createInitialClips = (): PlaylistClip[] => [
 ];
 
 const createInitialMixerChannels = (): MixerChannel[] => [
-  { id: 'mix-0', name: 'Master', color: '#ff763b', volume: 0.70, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
+  { id: 'mix-0', name: 'Master', color: '#ff763b', volume: 0.65, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
   { id: 'mix-1', name: 'Drums', color: '#f97316', volume: 0.9, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
   { id: 'mix-2', name: 'Hi-Hats', color: '#00d2ff', volume: 0.85, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
   { id: 'mix-3', name: '808 Bass', color: '#a855f7', volume: 0.95, pan: 0, mute: false, solo: false, peakL: 0, peakR: 0, effects: { ...DEFAULT_FX_SETTINGS } },
@@ -612,9 +612,9 @@ class Store {
         const parsed = JSON.parse(saved);
         if (parsed._version === CURRENT_STORAGE_VERSION) {
           initialState = parsed;
-          // Ensure master volume is comfortable if an old version had it too high
-          if (initialState.mixerChannels?.[0] && initialState.mixerChannels[0].volume > 0.8) {
-            initialState.mixerChannels[0].volume = 0.70;
+          // Ensure master volume is comfortable
+          if (initialState.mixerChannels?.[0] && initialState.mixerChannels[0].volume > 0.75) {
+            initialState.mixerChannels[0].volume = 0.65;
           }
         } else {
           console.info("Upgrading project state to Eve's Mixer Pro Studio Audio Engine");
@@ -767,6 +767,15 @@ class Store {
     this.audioEngine.setSwing(this.state.swing);
     this.audioEngine.setPlaybackMode(this.state.playbackMode);
     this.syncAudioEngineData();
+
+    // Sync initial mixer channel volumes, pan, mute, and effects
+    this.state.mixerChannels.forEach((ch, idx) => {
+      const node = this.audioEngine.mixer.getChannel(idx);
+      node.setVolume(ch.mute ? 0 : ch.volume, this.audioEngine.ctx);
+      node.setPan(ch.pan, this.audioEngine.ctx);
+      node.setMute(ch.mute, this.audioEngine.ctx);
+      if (ch.effects) node.updateEffects(ch.effects);
+    });
 
     this.audioEngine.addStepListener((step, bar) => {
       this.state.currentStep = step;
@@ -1716,10 +1725,10 @@ class Store {
     this.state.playbackMode = 'pattern';
     this.state.activeView = 'channelRack';
 
-    // Set Master Channel Volume to a comfortable 70%
+    // Set Master Channel Volume to a comfortable 65%
     if (this.state.mixerChannels[0]) {
-      this.state.mixerChannels[0].volume = 0.70;
-      this.audioEngine.mixer.getChannel(0).setVolume(0.70, this.audioEngine.ctx);
+      this.state.mixerChannels[0].volume = 0.65;
+      this.audioEngine.mixer.getChannel(0).setVolume(0.65, this.audioEngine.ctx);
     }
 
     // Radio Master Maximizer with comfortable -14 LUFS level

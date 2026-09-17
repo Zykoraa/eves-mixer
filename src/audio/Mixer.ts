@@ -44,8 +44,28 @@ export class MixerChannelNode {
   }
 
   public setVolume(vol: number, ctx: AudioContext) {
-    // vol: 0.0 to 1.25
-    this.volumeNode.gain.setTargetAtTime(vol, ctx.currentTime, 0.02);
+    if (this.index === 0) {
+      // Master Channel: Perceptual cubic audio taper (vol^2.6) with calibrated studio headroom (0.55)
+      // Prevents ear-splitting blasts caused by linear gain scaling.
+      // 50% is now a comfortable listening level (~ -21 dB), 70% is standard studio level (~ -13 dB),
+      // and smooth volume control is restored across the entire 0% to 100% slider throw.
+      const clamped = Math.max(0, Math.min(1.0, vol));
+      if (clamped <= 0.001) {
+        this.volumeNode.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.015);
+        return;
+      }
+      const audioTaperGain = Math.pow(clamped, 2.6) * 0.55;
+      this.volumeNode.gain.setTargetAtTime(audioTaperGain, ctx.currentTime, 0.02);
+    } else {
+      // Insert Channel: Quadratic curve with headroom
+      const clamped = Math.max(0, Math.min(1.5, vol));
+      if (clamped <= 0.001) {
+        this.volumeNode.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.015);
+        return;
+      }
+      const audioTaperGain = Math.pow(clamped, 1.8) * 0.8;
+      this.volumeNode.gain.setTargetAtTime(audioTaperGain, ctx.currentTime, 0.02);
+    }
   }
 
   public setPan(pan: number, ctx: AudioContext) {
@@ -106,6 +126,7 @@ export class Mixer {
 
     // Master Channel (Index 0)
     this.masterChannel = new MixerChannelNode(ctx, 0);
+    this.masterChannel.setVolume(0.70, ctx);
 
     // Wire Master FX Processors: Gross Beat -> Tape Color -> Mastering Suite
     const grossBeat = GrossBeatEngine.getInstance();
@@ -144,6 +165,7 @@ export class Mixer {
     // 8 Insert Channels (Index 1 to 8)
     for (let i = 1; i <= 8; i++) {
       const channel = new MixerChannelNode(ctx, i);
+      channel.setVolume(0.85, ctx);
       // Route insert output to master channel input
       channel.analyserNode.connect(this.masterChannel.inputNode);
       this.insertChannels.push(channel);

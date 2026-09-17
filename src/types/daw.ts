@@ -248,6 +248,7 @@ export type ViewTab =
   | 'channelRack'
   | 'pianoRoll'
   | 'playlist'
+  | 'vocalStudio'
   | 'mixer'
   | 'synth'
   | 'looper'

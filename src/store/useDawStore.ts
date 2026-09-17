@@ -27,6 +27,7 @@ import {
   TapeColorParameters,
   BeatboxHit,
   VoicedChord,
+  FxSettings,
 } from '../types/daw';
 import {
   DEFAULT_SYNTH_PARAMS,
@@ -829,7 +830,7 @@ class Store {
 
   public toggleSimpleMode() {
     this.state.simpleMode = !this.state.simpleMode;
-    if (this.state.simpleMode && !['channelRack', 'pianoRoll', 'playlist'].includes(this.state.activeView)) {
+    if (this.state.simpleMode && !['channelRack', 'pianoRoll', 'playlist', 'vocalStudio'].includes(this.state.activeView)) {
       this.state.activeView = 'channelRack';
     }
     this.notify();
@@ -838,7 +839,7 @@ class Store {
 
   public setSimpleMode(enabled: boolean) {
     this.state.simpleMode = enabled;
-    if (this.state.simpleMode && !['channelRack', 'pianoRoll', 'playlist'].includes(this.state.activeView)) {
+    if (this.state.simpleMode && !['channelRack', 'pianoRoll', 'playlist', 'vocalStudio'].includes(this.state.activeView)) {
       this.state.activeView = 'channelRack';
     }
     this.notify();
@@ -1271,6 +1272,85 @@ class Store {
     if (updates.mute !== undefined) node.setMute(updates.mute, this.audioEngine.ctx);
     if (updates.effects) node.updateEffects(updates.effects);
 
+    this.notify();
+  }
+
+  public applyProVocalChain(channelIndex: number = 6) {
+    const ch = this.state.mixerChannels[channelIndex];
+    if (!ch) return;
+    const fx: FxSettings = {
+      ...ch.effects,
+      eqEnabled: true,
+      eqBands: [
+        { type: 'highpass', frequency: 85, gain: -12, q: 0.707 },
+        { type: 'peaking', frequency: 220, gain: -1.5, q: 1.0 },
+        { type: 'peaking', frequency: 500, gain: -2.5, q: 1.2 },
+        { type: 'peaking', frequency: 3500, gain: 2.0, q: 1.0 },
+        { type: 'highshelf', frequency: 11000, gain: 3.5, q: 0.8 },
+      ],
+      compressorEnabled: true,
+      compressorThreshold: -18,
+      compressorRatio: 3.2,
+      compressorAttack: 0.015,
+      compressorRelease: 0.12,
+      compressorMakeup: 3.5,
+      delayEnabled: true,
+      delayTime: 0.25,
+      delayFeedback: 0.22,
+      delayMix: 0.16,
+      delayPingPong: true,
+      reverbEnabled: true,
+      reverbDecay: 2.2,
+      reverbMix: 0.22,
+      reverbDamp: 0.35,
+    };
+    this.updateMixerChannel(channelIndex, { effects: fx });
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public applyRadioMastering(preset: 'streaming' | 'club' | 'lofi' = 'streaming') {
+    if (preset === 'streaming') {
+      this.state.masteringParams = {
+        enabled: true,
+        inputGainDb: 0,
+        targetLufs: -14.0,
+        ceilingDb: -1.0,
+        stereoWidth: 1.15,
+        monoSubEnabled: true,
+        softClipWarmth: 35,
+        limiterReleaseMs: 45,
+      };
+    } else if (preset === 'club') {
+      this.state.masteringParams = {
+        enabled: true,
+        inputGainDb: 2.5,
+        targetLufs: -9.0,
+        ceilingDb: -0.3,
+        stereoWidth: 1.25,
+        monoSubEnabled: true,
+        softClipWarmth: 55,
+        limiterReleaseMs: 30,
+      };
+    } else {
+      this.state.masteringParams = {
+        enabled: true,
+        inputGainDb: -1.0,
+        targetLufs: -16.0,
+        ceilingDb: -1.5,
+        stereoWidth: 0.95,
+        monoSubEnabled: true,
+        softClipWarmth: 60,
+        limiterReleaseMs: 70,
+      };
+    }
+    MasteringSuite.getInstance().applyParameters(this.state.masteringParams);
+    this.notify();
+    this.saveToStorage();
+  }
+
+  public setRecording(isRecording: boolean) {
+    this.state.isRecording = isRecording;
     this.notify();
   }
 

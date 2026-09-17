@@ -29,11 +29,14 @@ import { BeatboxModal } from './components/BeatboxModal';
 import { ChordArchitectModal } from './components/ChordArchitectModal';
 import { SimpleGuideModal } from './components/SimpleGuideModal';
 import { SimpleStartBanner } from './components/SimpleStartBanner';
+import { VocalStudioView } from './components/VocalStudioView';
+import { ProTutorialModal } from './components/ProTutorialModal';
 import { useDawStore } from './store/useDawStore';
 
 export const App: React.FC = () => {
   const [state, store] = useDawStore();
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isInspirationOpen, setIsInspirationOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -82,12 +85,14 @@ export const App: React.FC = () => {
         onOpenBeatbox={() => setIsBeatboxOpen(true)}
         onOpenChordArchitect={() => setIsChordArchitectOpen(true)}
         onOpenGuide={() => setIsGuideOpen(true)}
+        onOpenTutorial={() => setIsTutorialOpen(true)}
       />
 
       {/* Quick Start Simple Mode Banner */}
       <SimpleStartBanner
         onOpenGuide={() => setIsGuideOpen(true)}
         onOpenChordArchitect={() => setIsChordArchitectOpen(true)}
+        onOpenTutorial={() => setIsTutorialOpen(true)}
       />
 
       {/* Main Studio Viewport */}
@@ -95,6 +100,7 @@ export const App: React.FC = () => {
         {state.activeView === 'channelRack' && <ChannelRack />}
         {state.activeView === 'pianoRoll' && <PianoRoll />}
         {state.activeView === 'playlist' && <Playlist />}
+        {state.activeView === 'vocalStudio' && <VocalStudioView />}
         {state.activeView === 'mixer' && <MixerRack />}
         {state.activeView === 'synth' && <SynthEditor />}
         {state.activeView === 'looper' && <LoopStationView />}
@@ -188,6 +194,14 @@ export const App: React.FC = () => {
       <SimpleGuideModal
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
+      />
+
+      {/* Step-by-Step Music Production & Vocal Masterclass Modal */}
+      <ProTutorialModal
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+        onOpenChordArchitect={() => setIsChordArchitectOpen(true)}
+        onOpenMastering={() => setIsMasteringOpen(true)}
       />
     </div>
   );

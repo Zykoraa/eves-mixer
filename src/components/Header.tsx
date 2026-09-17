@@ -28,6 +28,7 @@ import {
   HardDrive,
   Disc,
   Flame,
+  ChevronDown,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { NOTE_NAMES, SCALE_INTERVALS } from '../audio/Presets';
@@ -47,6 +48,7 @@ interface HeaderProps {
   onOpenBeatbox?: () => void;
   onOpenChordArchitect?: () => void;
   onOpenGuide?: () => void;
+  onOpenTutorial?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -62,9 +64,11 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenBeatbox,
   onOpenChordArchitect,
   onOpenGuide,
+  onOpenTutorial,
 }) => {
   const [state, store] = useDawStore();
   const [tapTimes, setTapTimes] = useState<number[]>([]);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
 
   // Tap tempo handler
   const handleTapTempo = () => {
@@ -127,29 +131,32 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const simpleNavItems: { id: ViewTab; label: string; icon: React.ReactNode; color: string }[] = [
-    { id: 'channelRack', label: '1. Drums & Beat', icon: <Grid size={15} />, color: 'text-orange-400' },
+    { id: 'channelRack', label: '1. Beat & Drums', icon: <Grid size={15} />, color: 'text-orange-400' },
     { id: 'pianoRoll', label: '2. Melody & Chords', icon: <Music size={15} />, color: 'text-sky-400' },
-    { id: 'playlist', label: '3. Song Arranger', icon: <Layers size={15} />, color: 'text-purple-400' },
+    { id: 'vocalStudio', label: '3. Record Vocals', icon: <Mic size={15} />, color: 'text-amber-400' },
+    { id: 'playlist', label: '4. Song Arranger', icon: <Layers size={15} />, color: 'text-purple-400' },
   ];
 
-  const proNavItems: { id: ViewTab; label: string; icon: React.ReactNode; color: string }[] = [
-    { id: 'channelRack', label: 'Channel Rack', icon: <Grid size={15} />, color: 'text-orange-400' },
+  const proCoreNavItems: { id: ViewTab; label: string; icon: React.ReactNode; color: string }[] = [
+    { id: 'channelRack', label: 'Drums', icon: <Grid size={15} />, color: 'text-orange-400' },
     { id: 'pianoRoll', label: 'Piano Roll', icon: <Music size={15} />, color: 'text-sky-400' },
-    { id: 'playlist', label: 'Playlist', icon: <Layers size={15} />, color: 'text-purple-400' },
+    { id: 'vocalStudio', label: 'Vocal Studio', icon: <Mic size={15} />, color: 'text-amber-400' },
+    { id: 'playlist', label: 'Arranger', icon: <Layers size={15} />, color: 'text-purple-400' },
     { id: 'mixer', label: 'Mixer', icon: <Sliders size={15} />, color: 'text-emerald-400' },
-    { id: 'newTone', label: 'NewTone', icon: <Mic size={15} />, color: 'text-cyan-400' },
-    { id: 'synth', label: 'EveSynth', icon: <Cpu size={15} />, color: 'text-pink-400' },
-    { id: 'looper', label: 'LoopStation', icon: <Radio size={15} />, color: 'text-yellow-400' },
-    { id: 'fxRack', label: 'FX Rack', icon: <Activity size={15} />, color: 'text-cyan-400' },
-    { id: 'browser', label: 'Sounds', icon: <Compass size={15} />, color: 'text-amber-400' },
-    { id: 'guitarRig', label: 'Guitar Rig', icon: <Guitar size={15} />, color: 'text-red-400' },
-    { id: 'vstPatchbay', label: 'VST Host', icon: <Plug size={15} />, color: 'text-indigo-400' },
-    { id: 'slicex', label: 'Slicex', icon: <Scissors size={15} />, color: 'text-amber-400' },
-    { id: 'mixingDoctor', label: 'Doctor', icon: <Stethoscope size={15} />, color: 'text-teal-400' },
-    { id: 'midiLearn', label: 'MIDI Learn', icon: <Sliders size={15} />, color: 'text-cyan-400' },
   ];
 
-  const navItems = state.simpleMode ? simpleNavItems : proNavItems;
+  const proSecondaryTools: { id: ViewTab; label: string; icon: React.ReactNode; color: string; desc: string }[] = [
+    { id: 'synth', label: 'EveSynth Poly', icon: <Cpu size={14} />, color: 'text-pink-400', desc: 'Analog 3-oscillator synth' },
+    { id: 'newTone', label: 'NewTone Pitch', icon: <Mic size={14} />, color: 'text-cyan-400', desc: 'Vocal pitch correction & tuning' },
+    { id: 'guitarRig', label: 'Guitar Rig', icon: <Guitar size={14} />, color: 'text-red-400', desc: 'Amp heads, cabs & stompboxes' },
+    { id: 'looper', label: 'LoopStation', icon: <Radio size={14} />, color: 'text-yellow-400', desc: '4-deck live sound-on-sound looper' },
+    { id: 'slicex', label: 'Slicex Chopper', icon: <Scissors size={14} />, color: 'text-amber-400', desc: 'Beat slicer & transient chopper' },
+    { id: 'fxRack', label: 'FX Rack', icon: <Activity size={14} />, color: 'text-cyan-400', desc: '8 insert multi-effects rack' },
+    { id: 'mixingDoctor', label: 'Doctor AI', icon: <Stethoscope size={14} />, color: 'text-teal-400', desc: 'AI spectral conflict detector' },
+    { id: 'vstPatchbay', label: 'VST Host', icon: <Plug size={14} />, color: 'text-indigo-400', desc: 'WebAssembly & Web Audio VSTs' },
+    { id: 'browser', label: 'Sound Library', icon: <Compass size={14} />, color: 'text-amber-400', desc: 'Samples, loops & one-shots' },
+    { id: 'midiLearn', label: 'MIDI Learn', icon: <Sliders size={14} />, color: 'text-cyan-400', desc: 'Hardware controller mapping' },
+  ];
 
   return (
     <header className="bg-[#181a1f] border-b border-[#2e323b] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 shadow-lg select-none z-30">
@@ -322,26 +329,113 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Center: DAW Navigation Views */}
       <nav className="flex items-center gap-1 bg-[#121316] p-1 rounded-lg border border-[#353945]">
-        {navItems.map((item) => {
-          const isActive = state.activeView === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => store.setActiveView(item.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all ${
-                isActive
-                  ? 'bg-[#272a33] text-white shadow-sm border border-[#3e4352]'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1c22]'
-              }`}
-            >
-              <span className={isActive ? item.color : 'text-gray-500'}>{item.icon}</span>
-              <span>{item.label}</span>
-              {item.id === 'looper' && state.isMicActive && (
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+        {state.simpleMode ? (
+          simpleNavItems.map((item) => {
+            const isActive = state.activeView === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => store.setActiveView(item.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-[#272a33] text-white shadow-sm border border-[#3e4352]'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1c22]'
+                }`}
+              >
+                <span className={isActive ? item.color : 'text-gray-500'}>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })
+        ) : (
+          <>
+            {proCoreNavItems.map((item) => {
+              const isActive = state.activeView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => store.setActiveView(item.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-[#272a33] text-white shadow-sm border border-[#3e4352]'
+                      : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1c22]'
+                  }`}
+                >
+                  <span className={isActive ? item.color : 'text-gray-500'}>{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+
+            {/* Instruments, Labs & Secondary Tools Dropdown */}
+            <div className="relative">
+              {(() => {
+                const activeSecondary = proSecondaryTools.find((t) => t.id === state.activeView);
+                return (
+                  <button
+                    onClick={() => setIsToolsOpen(!isToolsOpen)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all cursor-pointer ${
+                      activeSecondary
+                        ? 'bg-[#272a33] text-white shadow-sm border border-[#3e4352]'
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1c22]'
+                    }`}
+                  >
+                    {activeSecondary ? (
+                      <>
+                        <span className={activeSecondary.color}>{activeSecondary.icon}</span>
+                        <span>{activeSecondary.label}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sliders size={14} className="text-gray-400" />
+                        <span>Instruments & Tools</span>
+                      </>
+                    )}
+                    <ChevronDown size={13} className={`transition-transform duration-150 ${isToolsOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                );
+              })()}
+
+              {isToolsOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsToolsOpen(false)} />
+                  <div className="absolute left-0 mt-1 w-64 bg-[#181a24] border border-[#2f3548] rounded-xl shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="px-2.5 py-1 text-[10px] font-mono text-gray-400 uppercase font-bold border-b border-[#252a3a]">
+                      Instruments, Labs & FX
+                    </div>
+                    <div className="max-h-80 overflow-y-auto space-y-0.5">
+                      {proSecondaryTools.map((tool) => {
+                        const isToolActive = state.activeView === tool.id;
+                        return (
+                          <button
+                            key={tool.id}
+                            onClick={() => {
+                              store.setActiveView(tool.id);
+                              setIsToolsOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                              isToolActive
+                                ? 'bg-purple-600/20 text-white border border-purple-500/40'
+                                : 'hover:bg-[#222736] text-gray-300 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={tool.color}>{tool.icon}</span>
+                              <div>
+                                <span className="text-xs font-bold block">{tool.label}</span>
+                                <span className="text-[10px] text-gray-400">{tool.desc}</span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
               )}
-            </button>
-          );
-        })}
+            </div>
+          </>
+        )}
       </nav>
 
       {/* Right: Key/Scale lock + Creative & Export Actions */}
@@ -385,6 +479,18 @@ export const Header: React.FC<HeaderProps> = ({
 
         {state.simpleMode ? (
           <>
+            {/* Step-by-Step Production & Vocal Masterclass */}
+            {onOpenTutorial && (
+              <button
+                onClick={onOpenTutorial}
+                title="Full Step-by-Step Music Production & Vocal Masterclass"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <Sparkles size={14} className="text-amber-400 animate-pulse" />
+                <span>Tutorial</span>
+              </button>
+            )}
+
             {/* Quick 30-Sec Guide */}
             {onOpenGuide && (
               <button
@@ -431,6 +537,18 @@ export const Header: React.FC<HeaderProps> = ({
           </>
         ) : (
           <>
+            {/* Step-by-Step Production & Vocal Masterclass */}
+            {onOpenTutorial && (
+              <button
+                onClick={onOpenTutorial}
+                title="Full Step-by-Step Music Production & Vocal Masterclass"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <Sparkles size={14} className="text-amber-400 animate-pulse" />
+                <span className="hidden sm:inline">Tutorial</span>
+              </button>
+            )}
+
             {/* Universal Search Button (Ctrl+K) */}
             <button
               onClick={onOpenSearch}

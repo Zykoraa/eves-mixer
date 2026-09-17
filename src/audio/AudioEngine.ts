@@ -38,6 +38,7 @@ export class AudioEngine {
 
   // Automation
   private automationClips: AutomationClip[] = [];
+  private activeClipSources: Set<AudioBufferSourceNode> = new Set();
 
   // Transport & Clock State
   public isPlaying: boolean = false;
@@ -190,6 +191,7 @@ export class AudioEngine {
     this.grossBeatEngine.setTransport(false, 0);
     TapeColorEngine.getInstance().setTransport(false);
     this.synthEngine.stopAllVoices();
+    this.stopActiveClipSources();
     this.onStopListeners.forEach((cb) => cb());
   }
 
@@ -202,6 +204,19 @@ export class AudioEngine {
     this.grossBeatEngine.setTransport(false, 0);
     TapeColorEngine.getInstance().setTransport(false);
     this.synthEngine.stopAllVoices();
+    this.stopActiveClipSources();
+  }
+
+  private stopActiveClipSources() {
+    this.activeClipSources.forEach((src) => {
+      try {
+        src.stop();
+        src.disconnect();
+      } catch {
+        // Source may already have ended
+      }
+    });
+    this.activeClipSources.clear();
   }
 
   private scheduler() {
@@ -476,6 +491,11 @@ export class AudioEngine {
         clipGain.gain.setValueAtTime(1.0, time + durSeconds - fadeSec);
         clipGain.gain.linearRampToValueAtTime(0.0001, time + durSeconds);
       }
+
+      this.activeClipSources.add(source);
+      source.onended = () => {
+        this.activeClipSources.delete(source);
+      };
 
       source.start(time, offsetSeconds, durSeconds);
     } catch (err) {

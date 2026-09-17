@@ -1,22 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Guitar,
   Power,
   Volume2,
-  Sliders,
-  Radio,
-  Disc,
-  Mic,
-  Activity,
-  Layers,
-  Zap,
-  Sparkles,
-  Play,
-  Square,
-  RefreshCw,
-  Gauge,
-  CheckCircle2,
   VolumeX,
+  Disc,
+  Square,
+  Sparkles,
+  Gauge,
+  Activity,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 import { AudioEngine } from '../audio/AudioEngine';

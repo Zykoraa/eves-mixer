@@ -10,17 +10,20 @@ import {
   ChevronUp,
   Volume2,
   Zap,
+  Mic,
 } from 'lucide-react';
 import { useDawStore } from '../store/useDawStore';
 
 interface SimpleStartBannerProps {
   onOpenGuide: () => void;
   onOpenChordArchitect: () => void;
+  onOpenTutorial?: () => void;
 }
 
 export const SimpleStartBanner: React.FC<SimpleStartBannerProps> = ({
   onOpenGuide,
   onOpenChordArchitect,
+  onOpenTutorial,
 }) => {
   const [state, store] = useDawStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -36,11 +39,21 @@ export const SimpleStartBanner: React.FC<SimpleStartBannerProps> = ({
             <span>SIMPLE STUDIO</span>
           </div>
           <span className="text-gray-400 hidden sm:inline text-[11px]">
-            Fast beatmaker mode — 3 steps to make a full song:
+            Fast beatmaker mode — 4 simple steps to make a full song with singing:
           </span>
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenTutorial && (
+            <button
+              onClick={onOpenTutorial}
+              className="flex items-center gap-1 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white font-bold transition-all cursor-pointer border border-amber-500/40"
+            >
+              <Sparkles size={13} />
+              <span>Full Masterclass</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenGuide}
             className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#242838] hover:bg-[#30354a] text-sky-400 hover:text-white font-medium transition-all cursor-pointer border border-[#353a50]"
@@ -48,6 +61,7 @@ export const SimpleStartBanner: React.FC<SimpleStartBannerProps> = ({
             <HelpCircle size={13} />
             <span>30-Sec Guide</span>
           </button>
+
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-1 rounded hover:bg-[#252838] text-gray-400 hover:text-white transition-all cursor-pointer"
@@ -59,7 +73,7 @@ export const SimpleStartBanner: React.FC<SimpleStartBannerProps> = ({
       </div>
 
       {!isCollapsed && (
-        <div className="mt-2.5 pt-2 border-t border-[#252838] grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="mt-2.5 pt-2 border-t border-[#252838] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Step 1: Drums */}
           <div className="p-2.5 rounded-lg bg-[#12141c] border border-[#262a38] flex flex-col justify-between gap-1.5">
             <div className="flex items-center justify-between">
@@ -102,7 +116,7 @@ export const SimpleStartBanner: React.FC<SimpleStartBannerProps> = ({
             <div className="flex items-center justify-between">
               <span className="font-bold text-sky-400 flex items-center gap-1">
                 <Music size={13} />
-                <span>2. Harmony & Melody</span>
+                <span>2. Harmony & Chords</span>
               </span>
               <span className="text-[10px] text-gray-500 font-mono">Key: {state.selectedKey} {state.selectedScale}</span>
             </div>
@@ -124,42 +138,70 @@ export const SimpleStartBanner: React.FC<SimpleStartBannerProps> = ({
             </div>
           </div>
 
-          {/* Step 3: Sound Polish */}
+          {/* Step 3: Vocal Recording & Sing */}
+          <div className="p-2.5 rounded-lg bg-[#12141c] border border-[#262a38] flex flex-col justify-between gap-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-amber-400 flex items-center gap-1">
+                <Mic size={13} />
+                <span>3. Sing With Your Mic</span>
+              </span>
+              <span className="text-[10px] text-gray-500 font-mono">Vocal Studio</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={() => store.setActiveView('vocalStudio')}
+                className="px-2.5 py-1 rounded bg-gradient-to-r from-amber-600 to-red-600 hover:brightness-110 text-white font-bold transition-all text-[11px] flex items-center gap-1 cursor-pointer shadow-sm shadow-amber-600/30"
+              >
+                <Mic size={12} />
+                <span>Open Vocal Studio</span>
+              </button>
+              <button
+                onClick={() => store.applyProVocalChain(6)}
+                className="px-2 py-1 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-medium transition-all text-[11px] flex items-center gap-1 cursor-pointer"
+                title="Loads 6-stage radio vocal chain onto vocal track"
+              >
+                <Sparkles size={11} />
+                <span>Pro Vocal Mix</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Step 4: Radio Master Polish */}
           <div className="p-2.5 rounded-lg bg-[#12141c] border border-[#262a38] flex flex-col justify-between gap-1.5">
             <div className="flex items-center justify-between">
               <span className="font-bold text-emerald-400 flex items-center gap-1">
                 <Sliders size={13} />
-                <span>3. One-Click Polish</span>
+                <span>4. Radio Master</span>
               </span>
-              <span className="text-[10px] text-gray-500 font-mono">Master & Color</span>
+              <span className="text-[10px] text-gray-500 font-mono">Loudness & Color</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
               <button
                 onClick={() =>
                   store.updateMasteringParams({ enabled: !state.masteringParams.enabled })
                 }
-                className={`px-2.5 py-1 rounded font-bold transition-all text-[11px] flex items-center gap-1 cursor-pointer border ${
+                className={`px-2 py-1 rounded font-bold transition-all text-[11px] flex items-center gap-1 cursor-pointer border ${
                   state.masteringParams.enabled
                     ? 'bg-teal-500 text-black border-teal-400 shadow-sm shadow-teal-500/30'
                     : 'bg-[#1e212d] text-gray-400 border-[#323648] hover:text-white'
                 }`}
               >
                 <Volume2 size={12} />
-                <span>Radio Master: {state.masteringParams.enabled ? 'ON' : 'OFF'}</span>
+                <span>Master: {state.masteringParams.enabled ? 'ON' : 'OFF'}</span>
               </button>
 
               <button
                 onClick={() =>
                   store.updateTapeColorParams({ enabled: !state.tapeColorParams.enabled })
                 }
-                className={`px-2.5 py-1 rounded font-bold transition-all text-[11px] flex items-center gap-1 cursor-pointer border ${
+                className={`px-2 py-1 rounded font-bold transition-all text-[11px] flex items-center gap-1 cursor-pointer border ${
                   state.tapeColorParams.enabled
                     ? 'bg-amber-500 text-black border-amber-400 shadow-sm shadow-amber-500/30'
                     : 'bg-[#1e212d] text-gray-400 border-[#323648] hover:text-white'
                 }`}
               >
                 <Disc size={12} />
-                <span>Lo-Fi Tape: {state.tapeColorParams.enabled ? 'ON' : 'OFF'}</span>
+                <span>Tape: {state.tapeColorParams.enabled ? 'ON' : 'OFF'}</span>
               </button>
             </div>
           </div>

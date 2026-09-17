@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   Volume2,
+  VolumeX,
   Plus,
   Trash2,
   Shuffle,
@@ -153,6 +154,43 @@ export const ChannelRack: React.FC = () => {
             <Plus size={13} />
             <span>New Pat</span>
           </button>
+
+          {/* Master Volume Quick Control right inside Channel Rack Header */}
+          <div className="flex items-center gap-2 bg-[#141620] px-2.5 py-1 rounded border border-emerald-500/40 shadow-xs">
+            <button
+              onClick={() => {
+                const masterCh = state.mixerChannels[0];
+                if (masterCh) {
+                  store.updateMixerChannel(0, { mute: !masterCh.mute });
+                }
+              }}
+              title={state.mixerChannels[0]?.mute ? 'Unmute Master' : 'Mute Master'}
+              className="cursor-pointer"
+            >
+              {state.mixerChannels[0]?.mute || (state.mixerChannels[0]?.volume || 0) === 0 ? (
+                <VolumeX size={13} className="text-red-400 animate-pulse" />
+              ) : (
+                <Volume2 size={13} className="text-emerald-400" />
+              )}
+            </button>
+            <span className="text-[10px] font-mono font-bold text-gray-300">MASTER:</span>
+            <span className={`text-[10px] font-mono font-bold ${state.mixerChannels[0]?.mute ? 'text-red-400' : 'text-emerald-400'}`}>
+              {state.mixerChannels[0]?.mute ? 'MUTED' : `${Math.round((state.mixerChannels[0]?.volume ?? 0.7) * 100)}%`}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={1.0}
+              step={0.01}
+              value={state.mixerChannels[0]?.mute ? 0 : state.mixerChannels[0]?.volume ?? 0.7}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                store.updateMixerChannel(0, { volume: val, mute: false });
+              }}
+              title="Master Output Volume"
+              className="w-16 sm:w-24 h-1.5 bg-[#252838] accent-emerald-400 rounded cursor-pointer"
+            />
+          </div>
         </div>
 
         {/* Quick Drum Generator Shortcuts */}
@@ -284,8 +322,9 @@ export const ChannelRack: React.FC = () => {
               </div>
 
               {/* Volume & Pan Faders */}
-              <div className="flex items-center gap-1">
-                <div title={`Volume: ${Math.round(track.volume * 100)}%`} className="flex flex-col items-center">
+              <div className="flex items-center gap-1.5 bg-[#14151d] px-1.5 py-0.5 rounded border border-[#2b2e3c]">
+                <div title={`Track Volume: ${Math.round(track.volume * 100)}%`} className="flex items-center gap-1">
+                  <span className="text-[9px] font-mono text-gray-400 font-bold">VOL</span>
                   <input
                     type="range"
                     min="0"
@@ -296,10 +335,14 @@ export const ChannelRack: React.FC = () => {
                       track.volume = parseFloat(e.target.value);
                       store.syncAudioEngineData();
                     }}
-                    className="w-12 h-1.5 bg-[#2d313d] accent-orange-500 rounded cursor-pointer"
+                    className="w-14 h-1.5 bg-[#2d313d] accent-orange-500 rounded cursor-pointer"
                   />
+                  <span className="text-[9px] font-mono text-orange-400 font-semibold w-7 text-right">
+                    {Math.round(track.volume * 100)}%
+                  </span>
                 </div>
-                <div title={`Pan: ${track.pan}`} className="flex flex-col items-center">
+                <div title={`Pan: ${track.pan}`} className="flex items-center gap-1">
+                  <span className="text-[9px] font-mono text-gray-400 font-bold">PAN</span>
                   <input
                     type="range"
                     min="-1"

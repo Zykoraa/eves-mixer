@@ -1,8 +1,14 @@
 import React, { useRef, useEffect } from 'react';
 import { AudioEngine } from '../audio/AudioEngine';
+import { useDawStore } from '../store/useDawStore';
+import { Volume2, VolumeX } from 'lucide-react';
 
 export const VisualizerPanel: React.FC = () => {
+  const [state, store] = useDawStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const masterCh = state.mixerChannels[0];
+  const isMuted = masterCh?.mute || false;
+  const masterVol = isMuted ? 0 : (masterCh?.volume ?? 0.7);
 
   useEffect(() => {
     let animId: number;
@@ -72,15 +78,55 @@ export const VisualizerPanel: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-10 bg-[#0c0d12] border-t border-[#232530] px-3 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">
+    <div className="h-10 bg-[#0c0d12] border-t border-[#232530] px-3 flex items-center justify-between gap-4">
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">
           MASTER WAVE CANDY
         </span>
       </div>
-      <canvas ref={canvasRef} width={420} height={32} className="h-8 w-96 rounded bg-[#090a0e]" />
-      <div className="text-[10px] font-mono text-gray-500">
-        44.1 kHz • 24-bit WebAudio DSP
+
+      {/* Visualizer Canvas */}
+      <canvas ref={canvasRef} width={420} height={32} className="h-8 max-w-[320px] sm:max-w-[420px] flex-1 rounded bg-[#090a0e]" />
+
+      {/* Persistent Bottom Master Output Volume Bar */}
+      <div className="flex items-center gap-2 shrink-0 bg-[#141620] px-2.5 py-1 rounded-md border border-[#2c3144]">
+        <button
+          onClick={() => {
+            if (masterCh) {
+              store.updateMixerChannel(0, { mute: !masterCh.mute });
+            }
+          }}
+          title={isMuted ? 'Unmute Master Output' : 'Mute Master Output'}
+          className={`p-1 rounded cursor-pointer transition-colors ${
+            isMuted ? 'text-red-400 hover:text-red-300' : 'text-emerald-400 hover:text-emerald-300'
+          }`}
+        >
+          {isMuted || masterVol === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
+        </button>
+
+        <div className="flex items-center gap-1.5 font-mono text-[11px]">
+          <span className="text-gray-400 text-[10px] hidden md:inline">VOLUME:</span>
+          <span className={isMuted ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}>
+            {isMuted ? 'MUTED' : `${Math.round(masterVol * 100)}%`}
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={1.0}
+            step={0.01}
+            value={masterVol}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              store.updateMixerChannel(0, { volume: val, mute: false });
+            }}
+            title={`Master Volume: ${Math.round(masterVol * 100)}%`}
+            className="w-20 sm:w-28 h-1.5 bg-[#252838] accent-emerald-400 rounded cursor-pointer"
+          />
+        </div>
+      </div>
+
+      <div className="text-[10px] font-mono text-gray-500 hidden lg:block shrink-0">
+        44.1 kHz • 24-bit DSP
       </div>
     </div>
   );

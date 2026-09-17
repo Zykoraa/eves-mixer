@@ -327,8 +327,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Master Output Volume Slider & Quick Mute */}
-        <div className="flex items-center gap-2 bg-[#121316] px-2.5 py-1 rounded-md border border-[#353945]">
+        {/* Master Output Volume Slider & Quick Mute - High Visibility */}
+        <div className="shrink-0 flex items-center gap-2.5 bg-gradient-to-r from-emerald-950/40 via-[#151c1c] to-[#121318] px-3 py-1.5 rounded-lg border border-emerald-500/40 shadow-sm shadow-emerald-950/50">
           <button
             onClick={() => {
               const masterCh = state.mixerChannels[0];
@@ -337,23 +337,23 @@ export const Header: React.FC<HeaderProps> = ({
               }
             }}
             title={state.mixerChannels[0]?.mute ? 'Unmute Master Output' : 'Mute Master Output'}
-            className={`p-1 rounded transition-colors cursor-pointer ${
+            className={`p-1.5 rounded-md transition-all cursor-pointer ${
               state.mixerChannels[0]?.mute
-                ? 'text-red-400 hover:text-red-300'
-                : 'text-gray-400 hover:text-white'
+                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 hover:text-white'
             }`}
           >
             {state.mixerChannels[0]?.mute || (state.mixerChannels[0]?.volume || 0) === 0 ? (
-              <VolumeX size={16} className="text-red-400" />
+              <VolumeX size={17} className="text-red-400 animate-pulse" />
             ) : (
-              <Volume2 size={16} className="text-emerald-400" />
+              <Volume2 size={17} className="text-emerald-400" />
             )}
           </button>
 
           <div className="flex flex-col justify-center">
-            <div className="flex justify-between items-center text-[9px] font-mono text-gray-400 leading-none mb-1">
-              <span className="font-bold">MASTER</span>
-              <span className={state.mixerChannels[0]?.mute ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}>
+            <div className="flex justify-between items-center text-[10px] font-mono leading-none mb-1 gap-2">
+              <span className="font-bold text-gray-300 tracking-wider">MASTER VOL</span>
+              <span className={state.mixerChannels[0]?.mute ? 'text-red-400 font-bold' : 'text-emerald-400 font-extrabold'}>
                 {state.mixerChannels[0]?.mute
                   ? 'MUTED'
                   : `${Math.round((state.mixerChannels[0]?.volume ?? 0.7) * 100)}%`}
@@ -369,8 +369,8 @@ export const Header: React.FC<HeaderProps> = ({
                 const val = Number(e.target.value);
                 store.updateMixerChannel(0, { volume: val, mute: false });
               }}
-              title={`Master Volume: ${Math.round((state.mixerChannels[0]?.volume ?? 0.7) * 100)}%`}
-              className="w-20 sm:w-24 h-1.5 bg-[#252838] accent-emerald-500 rounded-lg cursor-pointer"
+              title={`Master Volume: ${Math.round((state.mixerChannels[0]?.volume ?? 0.7) * 100)}% (Click or drag)`}
+              className="w-24 sm:w-32 h-2 bg-[#252838] accent-emerald-400 rounded-lg cursor-pointer"
             />
           </div>
         </div>

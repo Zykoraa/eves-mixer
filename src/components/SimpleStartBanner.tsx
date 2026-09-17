@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   Volume2,
+  VolumeX,
   Zap,
   Mic,
 } from 'lucide-react';
@@ -39,8 +40,45 @@ export const SimpleStartBanner: React.FC<SimpleStartBannerProps> = ({
             <span>SIMPLE STUDIO</span>
           </div>
           <span className="text-gray-400 hidden sm:inline text-[11px]">
-            Fast beatmaker mode — 4 simple steps to make a full song with singing:
+            Fast beatmaker mode — 4 simple steps:
           </span>
+        </div>
+
+        {/* Dedicated Master Volume Slider in Simple Studio */}
+        <div className="flex items-center gap-2 bg-[#12141c] px-3 py-1 rounded-full border border-emerald-500/40 shadow-xs">
+          <button
+            onClick={() => {
+              const masterCh = state.mixerChannels[0];
+              if (masterCh) {
+                store.updateMixerChannel(0, { mute: !masterCh.mute });
+              }
+            }}
+            className="text-emerald-400 hover:text-emerald-300 cursor-pointer"
+            title={state.mixerChannels[0]?.mute ? 'Unmute Master' : 'Mute Master'}
+          >
+            {state.mixerChannels[0]?.mute || (state.mixerChannels[0]?.volume || 0) === 0 ? (
+              <VolumeX size={14} className="text-red-400 animate-pulse" />
+            ) : (
+              <Volume2 size={14} />
+            )}
+          </button>
+          <span className="text-[11px] font-bold text-gray-300">Volume:</span>
+          <span className={`text-[11px] font-mono font-bold ${state.mixerChannels[0]?.mute ? 'text-red-400' : 'text-emerald-400'}`}>
+            {state.mixerChannels[0]?.mute ? 'MUTED' : `${Math.round((state.mixerChannels[0]?.volume ?? 0.7) * 100)}%`}
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={1.0}
+            step={0.01}
+            value={state.mixerChannels[0]?.mute ? 0 : state.mixerChannels[0]?.volume ?? 0.7}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              store.updateMixerChannel(0, { volume: val, mute: false });
+            }}
+            title={`Master Volume: ${Math.round((state.mixerChannels[0]?.volume ?? 0.7) * 100)}%`}
+            className="w-20 sm:w-28 h-1.5 bg-[#252838] accent-emerald-400 rounded cursor-pointer"
+          />
         </div>
 
         <div className="flex items-center gap-2">

@@ -65,7 +65,7 @@ import { TapeColorEngine } from '../audio/TapeColorEngine';
 import { ChordArchitect } from '../audio/ChordArchitect';
 
 // Default initial tracks
-const CURRENT_STORAGE_VERSION = 'v2_pro_producer';
+const CURRENT_STORAGE_VERSION = 'v3_vocal_studio_2026';
 
 // Default initial tracks with authentic modern trap/r&b groove
 const createInitialTracks = (): ChannelTrack[] => [
@@ -612,6 +612,10 @@ class Store {
         const parsed = JSON.parse(saved);
         if (parsed._version === CURRENT_STORAGE_VERSION) {
           initialState = parsed;
+          // Ensure master volume is comfortable if an old version had it too high
+          if (initialState.mixerChannels?.[0] && initialState.mixerChannels[0].volume > 0.8) {
+            initialState.mixerChannels[0].volume = 0.70;
+          }
         } else {
           console.info("Upgrading project state to Eve's Mixer Pro Studio Audio Engine");
         }

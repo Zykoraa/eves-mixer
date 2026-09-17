@@ -2,10 +2,34 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Cache-busting headers to guarantee the latest version is always loaded -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Eve's Mixer | Professional Digital Audio Workstation</title>
-    <meta name="description" content="All-in-one FL Studio-inspired DAW: Beat Sequencer, Piano Roll, Synthesizer, 4-Deck Mic Looper, Multi-channel Mixer &amp; DSP FX." />
+    <title>Eve's Mixer | Online Beatmaker, Vocal Studio & Digital Audio Workstation</title>
+    <meta name="description" content="Eve's Mixer: All-in-one browser DAW with Beat Sequencer, Piano Roll, Vocal Studio Recording Booth, Synthesizer, Multi-channel Mixer, and Radio Mastering Suite." />
+    <meta name="keywords" content="eves mixer, eve mixer, online daw, beat maker, vocal studio, fl studio web, music production, auto-tune, beatmaker online" />
+
+    <!-- OpenGraph metadata -->
+    <meta property="og:title" content="Eve's Mixer | Latest Version DAW & Vocal Studio" />
+    <meta property="og:description" content="Make beats, record vocals with live pitch feedback, and master radio-ready tracks directly in your browser." />
+    <meta property="og:type" content="website" />
+
+    <!-- Pre-script to purge legacy caches & ensure freshest bundle -->
+    <script>
+      (function () {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function (registrations) {
+            for (var i = 0; i < registrations.length; i++) {
+              registrations[i].unregister();
+            }
+          });
+        }
+      })();
+    </script>
   </head>
   <body class="bg-[#121316] overflow-hidden">
     <div id="root"></div>

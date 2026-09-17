@@ -31,6 +31,7 @@ import { SimpleGuideModal } from './components/SimpleGuideModal';
 import { SimpleStartBanner } from './components/SimpleStartBanner';
 import { VocalStudioView } from './components/VocalStudioView';
 import { ProTutorialModal } from './components/ProTutorialModal';
+import { VersionUpdateNotifier } from './components/VersionUpdateNotifier';
 import { useDawStore } from './store/useDawStore';
 
 export const App: React.FC = () => {
@@ -71,6 +72,9 @@ export const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#121316] text-white select-none overflow-hidden">
+      {/* Auto-Updater Banner when a newer build is deployed */}
+      <VersionUpdateNotifier />
+
       {/* Top DAW Transport & Navigation */}
       <Header
         onOpenInspiration={() => setIsInspirationOpen(true)}
